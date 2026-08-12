@@ -7,30 +7,40 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies & build output
+# Dependencies & frontend build output
 node_modules
 dist
 dist-ssr
 *.local
 
-# Tauri / Rust
-src-tauri/target
+# Env / secrets (never commit)
+.env
+.env.*
+!.env.example
 
-# Monaco AMD build is copied by postinstall (scripts/copy-monaco.mjs)
-# Keep the tree out of git; `npm install` regenerates it.
+# Tauri / Rust build artifacts
+src-tauri/target
+src-tauri/gen/schemas
+*.pdb
+
+# Monaco AMD build — copied by postinstall (scripts/copy-monaco.mjs)
+# Regenerated on `npm install`; do not commit (~23 MB).
 public/monaco
 
-# Editor directories and files
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# OS junk
-Thumbs.db
-Desktop.ini
+# Misc
+*.tsbuildinfo
+.turbo
+coverage
