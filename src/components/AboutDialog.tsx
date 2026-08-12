@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import appIcon from "../assets/app-icon.png";
+/** Grimsoft dog + wizard hat — About branding only (app/exe uses scroll icon). */
+import grimsoftIcon from "../assets/grimsoft-icon.jpg";
 
 /** Fallback if Tauri getVersion is unavailable (browser preview). */
 const FALLBACK_VERSION = "0.3.0";
@@ -53,8 +54,8 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
       >
         <img
           className="about-icon"
-          src={appIcon}
-          alt="Grimpad"
+          src={grimsoftIcon}
+          alt="Grimsoft"
           width={72}
           height={72}
           draggable={false}
