@@ -5,8 +5,8 @@ let configured = false;
 let themesReady = false;
 
 /**
- * Load Monaco's official AMD build from /monaco/vs (copied into public/).
- * Avoids brittle Vite ?worker imports that can blank the whole WebView.
+ * Load Monaco's official AMD build from /monaco/vs (copied into public/ by scripts/copy-monaco.mjs).
+ * This is the setup that worked before CSP / ESM experiments.
  */
 export function setupMonacoLoader(): void {
   if (configured) return;
@@ -14,7 +14,7 @@ export function setupMonacoLoader(): void {
 
   loader.config({
     paths: {
-      // Served from public/monaco/vs (dev + production dist)
+      // Served from public/monaco/vs (dev) and dist/monaco/vs (production)
       vs: "/monaco/vs",
     },
   });
@@ -78,9 +78,45 @@ export function registerThemes(monaco: typeof Monaco): void {
   });
 }
 
+export function applyModelLanguage(
+  monaco: typeof Monaco,
+  model: Monaco.editor.ITextModel,
+  language: string,
+): void {
+  if (model.isDisposed()) return;
+  try {
+    if (model.getLanguageId() !== language) {
+      monaco.editor.setModelLanguage(model, language);
+    }
+  } catch (e) {
+    console.warn("applyModelLanguage", language, e);
+  }
+}
+
+/** Quiet TS/JS diagnostics when the TS language service is present. */
+export function quietTypescriptDiagnostics(monaco: typeof Monaco): void {
+  try {
+    const ts = (
+      monaco.languages as unknown as {
+        typescript?: {
+          typescriptDefaults?: { setDiagnosticsOptions: (o: object) => void };
+          javascriptDefaults?: { setDiagnosticsOptions: (o: object) => void };
+        };
+      }
+    ).typescript;
+    if (!ts?.typescriptDefaults || !ts.javascriptDefaults) return;
+    const opts = { noSemanticValidation: true, noSyntaxValidation: true };
+    ts.typescriptDefaults.setDiagnosticsOptions(opts);
+    ts.javascriptDefaults.setDiagnosticsOptions(opts);
+  } catch {
+    /* language service not loaded yet */
+  }
+}
+
 export async function ensureMonaco(): Promise<typeof Monaco> {
   setupMonacoLoader();
   const monaco = await loader.init();
   registerThemes(monaco);
+  quietTypescriptDiagnostics(monaco);
   return monaco;
 }

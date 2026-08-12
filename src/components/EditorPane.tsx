@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
-import { ensureMonaco, registerThemes, setupMonacoLoader } from "../lib/monacoSetup";
+import {
+  ensureMonaco,
+  quietTypescriptDiagnostics,
+  registerThemes,
+  setupMonacoLoader,
+} from "../lib/monacoSetup";
 import { isCodeLanguage, isMarkdownLike } from "../lib/languages";
 import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore } from "../store/settingsStore";
@@ -79,17 +84,9 @@ export function EditorPane() {
   const onMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     registerThemes(monaco);
+    quietTypescriptDiagnostics(monaco);
     setMonaco(monaco);
     setEditor(editor);
-
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
-      noSyntaxValidation: true,
-    });
-    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
-      noSyntaxValidation: true,
-    });
 
     monaco.editor.setTheme(resolvedTheme === "dark" ? "grimpad-dark" : "grimpad-light");
 

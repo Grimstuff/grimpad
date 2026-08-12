@@ -14,6 +14,7 @@ import {
   saveFileDialog,
   writeFile,
 } from "../lib/fileService";
+import { applyModelLanguage } from "../lib/monacoSetup";
 
 export type TabId = string;
 
@@ -219,8 +220,11 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       let model = monaco.editor.getModel(uri);
       if (!isAlive(model)) {
         model = monaco.editor.createModel(opts.content ?? "", language, uri);
-      } else if (opts.content !== undefined) {
-        model.setValue(opts.content);
+      } else {
+        if (opts.content !== undefined) {
+          model.setValue(opts.content);
+        }
+        applyModelLanguage(monaco, model, language);
       }
       get()._models.set(id, model);
 
@@ -384,7 +388,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       const language = languageFromPath(path);
       const title = titleFromPath(path);
       const monaco = get()._monaco;
-      if (monaco) monaco.editor.setModelLanguage(model, language);
+      if (monaco) applyModelLanguage(monaco, model, language);
 
       set((s) => ({
         tabs: s.tabs.map((t) =>
@@ -417,7 +421,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       const language = languageFromPath(path);
       const title = titleFromPath(path);
       const monaco = get()._monaco;
-      if (monaco) monaco.editor.setModelLanguage(model, language);
+      if (monaco) applyModelLanguage(monaco, model, language);
 
       set((s) => ({
         tabs: s.tabs.map((t) =>
@@ -463,7 +467,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     if (!monaco || !isAlive(model)) return;
 
     try {
-      monaco.editor.setModelLanguage(model, language);
+      applyModelLanguage(monaco, model, language);
     } catch (e) {
       console.warn("setModelLanguage failed", e);
       return;

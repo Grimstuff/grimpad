@@ -32,8 +32,7 @@ src-tauri/WixTools
 release/
 releases/
 
-# Monaco AMD build — copied by postinstall (scripts/copy-monaco.mjs)
-# Regenerated on `npm install`; do not commit (~23 MB).
+# Legacy AMD Monaco copy (no longer used; safe to delete locally)
 public/monaco
 
 # Mobile icon trees if `tauri icon` regenerates them (Windows-first app)

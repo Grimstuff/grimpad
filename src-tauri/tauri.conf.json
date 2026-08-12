@@ -28,15 +28,7 @@
       }
     ],
     "security": {
-      "csp": {
-        "default-src": "'self' customprotocol: asset:",
-        "connect-src": "ipc: http://ipc.localhost",
-        "img-src": "'self' asset: http://asset.localhost blob: data:",
-        "style-src": "'unsafe-inline' 'self'",
-        "font-src": "'self' data:",
-        "worker-src": "'self' blob:",
-        "script-src": "'self' 'unsafe-eval' blob:"
-      }
+      "csp": null
     }
   },
   "bundle": {
