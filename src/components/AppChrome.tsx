@@ -233,7 +233,7 @@ export function AppChrome() {
           <button
             type="button"
             className="menu-option"
-            title="When on, quitting with unsaved edits asks Save / Don't save"
+            title="When on, closing the app or a dirty tab asks Save / Don't save"
             onClick={() => run(() => toggleConfirmClose())}
           >
             {confirmClose ? "✓ Confirm close" : "Confirm close"}

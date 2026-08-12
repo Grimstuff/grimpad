@@ -233,8 +233,8 @@ fn relative_luminance(r: u8, g: u8, b: u8) -> f64 {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        // Restore size/position while hidden; we show from the frontend after first paint
-        // so the default-size white flash never appears.
+        // Restore size/position while hidden; frontend shows after first paint
+        // so the default-size flash never appears.
         .plugin(
             tauri_plugin_window_state::Builder::new()
                 .with_state_flags(
@@ -252,7 +252,6 @@ pub fn run() {
                 use tauri::Manager;
                 use tauri::window::Color;
                 if let Some(win) = app.get_webview_window("main") {
-                    // Match app chrome so any brief show isn't a white void.
                     let _ = win.set_background_color(Some(Color(0x1e, 0x1e, 0x1e, 0xff)));
                 }
             }

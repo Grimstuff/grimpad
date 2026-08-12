@@ -29,6 +29,9 @@ export default defineConfig(async () => ({
     },
   },
   optimizeDeps: {
-    include: ["@monaco-editor/react"],
+    include: ["@monaco-editor/react", "monaco-editor"],
+  },
+  worker: {
+    format: "es",
   },
 }));

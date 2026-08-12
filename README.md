@@ -1,107 +1,88 @@
-# Grimpad
+<p align="center">
+  <img src="src-tauri/icons/128x128.png" width="96" alt="Grimpad">
+</p>
 
-A lightweight, Fluent-inspired multi-tab notepad for Windows — simple like [Notepads](https://www.notepadsapp.com/), with **VS Code–class syntax highlighting** via the [Monaco Editor](https://microsoft.github.io/monaco-editor/) and **live markdown** via [MDXEditor](https://mdxeditor.dev/).
+<h1 align="center">Grimpad</h1>
 
-**Status:** beta (`0.4.0`)  
-**License:** [MIT](./LICENSE)
+<p align="center">
+  A modern, lightweight notepad for Windows — tabs, syntax highlighting, and live markdown.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Grimstuff/grimpad/releases/latest"><img src="https://img.shields.io/github/v/release/Grimstuff/grimpad?style=flat-square&label=latest" alt="Latest release"></a>
+  <a href="https://github.com/Grimstuff/grimpad/releases"><img src="https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square" alt="Windows"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT"></a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot.png" alt="Grimpad — tabs, Monaco highlighting, and About" width="880">
+</p>
+
+## What is Grimpad?
+
+A Fluent-style notepad in the spirit of [Notepads](https://github.com/0x7c13/Notepads): fast to open, easy on the eyes, and good enough for notes *and* config files. Under the hood it uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) (the same engine as VS Code) plus [MDXEditor](https://mdxeditor.dev/) for live markdown.
+
+It is a personal project, still in **beta** (`0.5.0`). MIT licensed.
 
 ## Features
 
-* **Tabs** — new, open, close, dirty indicator, middle-click close, overflow seek
-* **Open / Save / Save As** — native dialogs, UTF-8 (max 32 MB per file)
-* **Session restore** — open tabs (including unsaved buffers) survive restart
-* **Quit prompts** — unsaved tabs prompt Save / Don’t save before exit
-* **External change detection** — prompt Reload / Keep mine when a file changes on disk
-* **Ghost files** — if a path no longer exists, buffer stays open dirty (no path) for re-save
-* **Monaco editor** — Dark+/Light+–style themes, language from extension or status-bar override
-* **Markdown** — Formatted (live) / Raw (source) toggle for `.md` / markdown languages
-* **Find / Replace / Go to line** — Monaco built-ins (`Ctrl+F`, `Ctrl+H`, `Ctrl+G`)
-* **Zoom** — status bar font control / `Ctrl+Plus` / `Ctrl+-` / `Ctrl+0` (persisted)
-* **Word wrap** + theme mode persisted across launches
-* **Light / dark / system** chrome theme; Windows accent color on chrome
-* **Window size/position** remembered across launches
-* **Drag-and-drop** files onto the window to open
-* **Open with / drop on exe** — cold-start opens the requested file(s)
+* **Tabs** — new, open, close, dirty indicator, middle-click close
+* **Monaco** — syntax highlighting, Find / Replace / Go to line
+* **Markdown** — Formatted (live) and Raw (source)
+* **Session restore** — tabs and unsaved buffers come back after quit
+* **Confirm close** — optional Save / Don’t save prompt (app quit and dirty tabs)
+* **External changes** — Reload or keep yours when a file changes on disk
+* **Open how you want** — drag-and-drop, drop on the exe, or Open with
+* **Theme** — light, dark, or system, plus Windows accent color
+* **Word wrap** and **zoom** persist across launches
 
-## Stack
+## Downloads
 
-| Layer  | Tech                                                |
-| ------ | --------------------------------------------------- |
-| Shell  | [Tauri 2](https://tauri.app/) (WebView2 on Windows) |
-| UI     | React + TypeScript + Vite                           |
-| Editor | Monaco + MDXEditor (markdown formatted view)        |
-| State  | Zustand                                             |
+Get the latest Windows x64 build from **[Releases](https://github.com/Grimstuff/grimpad/releases/latest)**.
 
-## Clone & run (clean machine)
+| File | What |
+|------|------|
+| `Grimpad-0.5.0-windows-x64.exe` | **Standalone** — double-click, no install |
+| `Grimpad_0.5.0_x64-setup.exe` | NSIS installer |
+| `Grimpad_0.5.0_x64_en-US.msi` | MSI installer |
 
-Requirements:
+Needs [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) (already on most Windows 10/11 PCs).
 
-* **Node.js 20+**
-* **Rust** (stable) + Windows build tools ([Tauri prerequisites](https://v2.tauri.app/start/prerequisites/))
-* **WebView2** (preinstalled on modern Windows)
+The portable exe is unsigned. Microsoft Defender’s machine-learning heuristic (`Wacatac.B!ml`) sometimes flags brand-new unsigned builds. That is a reputation false positive, not a packed or obfuscated binary.
+
+## Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` / `Ctrl+T` | New tab |
+| `Ctrl+O` | Open |
+| `Ctrl+S` / `Ctrl+Shift+S` | Save / Save as |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+1`…`9` | Jump to tab |
+| `Ctrl+F` / `Ctrl+H` | Find / replace |
+| `Ctrl+G` | Go to line |
+| `Ctrl++` / `-` / `0` | Zoom in / out / reset |
+
+## Privacy
+
+Session state lives only on your machine:
+
+`%AppData%\com.grimmers.grimpad\session.json`
+
+It can include full buffer text for unsaved tabs (plaintext, like Notepad / VS Code hot-exit). Grimpad does not phone home.
+
+## Build from source
+
+Requires **Node.js 20+**, **Rust** (stable), and [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
 git clone https://github.com/Grimstuff/grimpad.git
 cd grimpad
-npm install          # also copies Monaco → public/monaco via postinstall
-npm run tauri dev    # development window
+npm install
+npm run tauri dev     # development
+npm run tauri build   # release exe + installers
 ```
-
-Production build:
-
-```bash
-npm run tauri build
-```
-
-Installers / exe land under `src-tauri/target/release/` and `src-tauri/target/release/bundle/`.
-
-### What is *not* in the repo
-
-| Path | Why |
-|------|-----|
-| `node_modules/` | Install with `npm install` |
-| `public/monaco/` | Generated by `postinstall` from `monaco-editor` (~23 MB AMD build) |
-| `dist/` | Vite frontend build output |
-| `src-tauri/target/` | Rust / Tauri compile output (debug + release exes) |
-
-A fresh clone only needs the tracked source; the rest is recreated by install/build.
-
-## Session data & privacy
-
-Open-tab state is stored at:
-
-`%AppData%\com.grimmers.grimpad\session.json`
-
-This includes full buffer text for dirty/untitled tabs (and content snapshots). It is **local plaintext**, similar to Notepad++ / VS Code hot-exit — not encrypted. Anyone with access to your Windows user profile can read it. Treat secrets accordingly.
-
-## Security notes
-
-* File open/save goes through custom Tauri commands with a **32 MiB** size cap.
-* Capabilities are limited to dialogs, window controls, and window-state — no shell opener, no broad FS plugin.
-* WebView **CSP** is enabled with a Monaco-friendly policy (local assets + `blob` workers; no random remote scripts).
-
-## Shortcuts
-
-| Shortcut                      | Action                |
-| ----------------------------- | --------------------- |
-| `Ctrl+N` / `Ctrl+T`           | New tab               |
-| `Ctrl+O`                      | Open file(s)          |
-| `Ctrl+S`                      | Save                  |
-| `Ctrl+Shift+S`                | Save as               |
-| `Ctrl+W`                      | Close tab             |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab   |
-| `Ctrl+1`…`9`                  | Jump to tab           |
-| `Ctrl+F` / `Ctrl+H`           | Find / replace        |
-| `Ctrl+G`                      | Go to line            |
-| `Ctrl+Plus` / `-` / `0`       | Zoom in / out / reset |
-
-## Roadmap ideas
-
-* Encoding picker (non–UTF-8)
-* Minimap / read-only mode
-* Optional leaner session mode (paths only)
-* Optional LSP for deeper IntelliSense
-* Installer branding polish
 
 ## License
 

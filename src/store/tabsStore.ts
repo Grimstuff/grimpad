@@ -15,6 +15,12 @@ import {
   writeFile,
 } from "../lib/fileService";
 import { applyModelLanguage } from "../lib/monacoSetup";
+import { useSettingsStore } from "./settingsStore";
+import {
+  detectLanguageFromText,
+  readyForFormattedMarkdown,
+  shouldLockLanguage,
+} from "../lib/detectLanguage";
 
 export type TabId = string;
 
@@ -35,6 +41,8 @@ export interface EditorTab {
   encoding: "utf-8";
   /** Markdown: live formatted view vs raw source in Monaco. */
   viewMode: DocViewMode;
+  /** Stop auto-detect (user picked, file has a path, or guess is locked in). */
+  languageLocked: boolean;
   /** Last known on-disk fingerprint for external-change detection. */
   disk?: DiskBaseline;
 }
@@ -77,7 +85,7 @@ interface TabsState {
   activateIndex: (index: number) => void;
   getActiveTab: () => EditorTab | null;
   getModel: (id: TabId) => MonacoNS.editor.ITextModel | undefined;
-  setTabLanguage: (id: TabId, language: string) => void;
+  setTabLanguage: (id: TabId, language: string, opts?: { lock?: boolean }) => void;
   setViewMode: (id: TabId, mode: DocViewMode) => void;
   toggleMarkdownView: (id: TabId) => void;
   refreshDiskBaseline: (id: TabId) => Promise<void>;
@@ -88,6 +96,82 @@ interface TabsState {
 
 function uid(): string {
   return crypto.randomUUID();
+}
+
+/** Consecutive same auto-detect hits per untitled tab (not persisted). */
+const detectStreak = new Map<TabId, { id: string; n: number }>();
+const detectTimers = new Map<TabId, ReturnType<typeof setTimeout>>();
+const formattedTimers = new Map<TabId, ReturnType<typeof setTimeout>>();
+
+function latestText(get: () => TabsState, tabId: TabId, fallback: string): string {
+  return get().getModel(tabId)?.getValue() ?? fallback;
+}
+
+function maybeSwitchToFormattedMarkdown(get: () => TabsState, tabId: TabId) {
+  const prev = formattedTimers.get(tabId);
+  if (prev) clearTimeout(prev);
+  formattedTimers.set(
+    tabId,
+    setTimeout(() => {
+      formattedTimers.delete(tabId);
+      const tab = get().tabs.find((t) => t.id === tabId);
+      if (!tab || tab.path || tab.viewMode === "formatted") return;
+      if (!isMarkdownLike(tab.language)) return;
+      const text = latestText(get, tabId, "");
+      if (!readyForFormattedMarkdown(text)) return;
+      get().setViewMode(tabId, "formatted");
+    }, 850),
+  );
+}
+
+function maybeAutoDetectLanguage(get: () => TabsState, tabId: TabId, text: string) {
+  const prevTimer = detectTimers.get(tabId);
+  if (prevTimer) clearTimeout(prevTimer);
+  // Keep postponing Formatted remount while keys are still coming
+  const pendingFmt = formattedTimers.get(tabId);
+  if (pendingFmt) {
+    clearTimeout(pendingFmt);
+    formattedTimers.delete(tabId);
+  }
+
+  detectTimers.set(
+    tabId,
+    setTimeout(() => {
+      detectTimers.delete(tabId);
+      const tab = get().tabs.find((t) => t.id === tabId);
+      if (!tab || tab.languageLocked || tab.path) {
+        if (tab && isMarkdownLike(tab.language) && tab.viewMode !== "formatted") {
+          maybeSwitchToFormattedMarkdown(get, tabId);
+        }
+        return;
+      }
+
+      const live = latestText(get, tabId, text);
+      const guess = detectLanguageFromText(live);
+      if (!guess) return;
+
+      const prev = detectStreak.get(tabId);
+      const streak =
+        prev && prev.id === guess.id ? { id: guess.id, n: prev.n + 1 } : { id: guess.id, n: 1 };
+      detectStreak.set(tabId, streak);
+
+      const lock = shouldLockLanguage(live, streak.n);
+      if (guess.id !== tab.language && guess.score >= 0.4) {
+        get().setTabLanguage(tabId, guess.id, { lock });
+      } else if (lock) {
+        get().setTabLanguage(tabId, tab.language, { lock: true });
+      }
+
+      if (isMarkdownLike(guess.id)) {
+        if (/^ {0,3}#{1,6}[ \t]+\S[^\n]*\n/.test(live)) {
+          // Enter after a heading — swap now; line is finished
+          get().setViewMode(tabId, "formatted");
+        } else if (readyForFormattedMarkdown(live)) {
+          maybeSwitchToFormattedMarkdown(get, tabId);
+        }
+      }
+    }, 220),
+  );
 }
 
 /** Unique URI per tab so models never share identity across tabs. */
@@ -212,6 +296,8 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       viewMode:
         opts.viewMode ??
         (isMarkdownLike(language) ? "formatted" : "source"),
+      // Saved files follow extension. Untitled stays unlocked until detect/user pick.
+      languageLocked: Boolean(path) || (opts.language != null && opts.language !== "plaintext"),
     };
 
     if (monaco) {
@@ -232,6 +318,9 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         if (!isAlive(model)) return;
         const t = get().tabs.find((x) => x.id === id);
         if (t && !t.isDirty) get().markDirty(id, true);
+        if (t && !t.path && !t.languageLocked) {
+          maybeAutoDetectLanguage(get, id, model.getValue());
+        }
         // Keep session snapshot fresh while typing
         void import("../lib/session").then((m) => m.scheduleSessionSave());
       });
@@ -278,7 +367,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     const tab = state.tabs.find((t) => t.id === id);
     if (!tab) return true;
 
-    if (tab.isDirty) {
+    if (tab.isDirty && useSettingsStore.getState().confirmClose) {
       const action = await confirmCloseDirty(tab.title);
       if (action === "cancel") return false;
       if (action === "save") {
@@ -287,6 +376,14 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         if (!ok) return false;
       }
     }
+
+    detectStreak.delete(id);
+    const tmr = detectTimers.get(id);
+    if (tmr) clearTimeout(tmr);
+    detectTimers.delete(id);
+    const fmt = formattedTimers.get(id);
+    if (fmt) clearTimeout(fmt);
+    formattedTimers.delete(id);
 
     const idx = state.tabs.findIndex((t) => t.id === id);
     const nextTabs = state.tabs.filter((t) => t.id !== id);
@@ -389,10 +486,13 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       const title = titleFromPath(path);
       const monaco = get()._monaco;
       if (monaco) applyModelLanguage(monaco, model, language);
+      detectStreak.delete(tab.id);
 
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.id === tab.id ? { ...t, path, title, language, isDirty: false } : t,
+          t.id === tab.id
+            ? { ...t, path, title, language, isDirty: false, languageLocked: true }
+            : t,
         ),
       }));
       updateWindowTitle(get().tabs.find((t) => t.id === tab.id));
@@ -422,10 +522,13 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       const title = titleFromPath(path);
       const monaco = get()._monaco;
       if (monaco) applyModelLanguage(monaco, model, language);
+      detectStreak.delete(tab.id);
 
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.id === tab.id ? { ...t, path, title, language, isDirty: false } : t,
+          t.id === tab.id
+            ? { ...t, path, title, language, isDirty: false, languageLocked: true }
+            : t,
         ),
       }));
       updateWindowTitle(get().tabs.find((t) => t.id === tab.id));
@@ -461,7 +564,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     return isAlive(model) ? model : undefined;
   },
 
-  setTabLanguage: (id, language) => {
+  setTabLanguage: (id, language, opts) => {
     const monaco = get()._monaco;
     const model = get()._models.get(id);
     if (!monaco || !isAlive(model)) return;
@@ -473,6 +576,9 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       return;
     }
 
+    // Picker / save / explicit call locks. Auto-detect may pass lock: false.
+    const lock = opts?.lock !== false;
+
     set((s) => ({
       tabs: s.tabs.map((t) => {
         if (t.id !== id) return t;
@@ -480,10 +586,12 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         return {
           ...t,
           language,
+          languageLocked: lock || t.languageLocked,
           viewMode: md ? t.viewMode ?? "formatted" : "source",
         };
       }),
     }));
+    if (lock) detectStreak.delete(id);
   },
 
   setViewMode: (id, mode) => {
@@ -524,6 +632,11 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       /* ignore */
     }
     for (const id of ids) disposeTabModel(get, id);
+    detectStreak.clear();
+    for (const t of detectTimers.values()) clearTimeout(t);
+    detectTimers.clear();
+    for (const t of formattedTimers.values()) clearTimeout(t);
+    formattedTimers.clear();
     set({ tabs: [], activeTabId: null });
   },
 }));

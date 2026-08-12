@@ -340,6 +340,9 @@
   min-height: 0;
   position: relative;
   background: var(--gp-surface);
+  /* Chrome metrics must not leak into Monaco line boxes */
+  line-height: normal;
+  user-select: text;
 }
 
 .editor-pane-md {

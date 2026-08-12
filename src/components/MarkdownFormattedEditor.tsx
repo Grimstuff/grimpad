@@ -35,6 +35,24 @@ export function MarkdownFormattedEditor({ tabId }: Props) {
     return useTabsStore.getState().getModel(tabId)?.getValue() ?? "";
   }, [tabId]);
 
+  // After engine swap (auto-detect → Formatted), keep caret so typing doesn't die
+  useEffect(() => {
+    let cancelled = false;
+    const tryFocus = (attempt: number) => {
+      if (cancelled) return;
+      editorRef.current?.focus(undefined, { defaultSelection: "rootEnd" });
+      const el = document.querySelector<HTMLElement>(".md-formatted-content");
+      if (el && document.activeElement !== el && attempt < 8) {
+        window.setTimeout(() => tryFocus(attempt + 1), 40);
+      }
+    };
+    const t = window.setTimeout(() => tryFocus(0), 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [tabId]);
+
   // If the underlying model changes externally (e.g. file reload), push into MDXEditor
   useEffect(() => {
     const model = useTabsStore.getState().getModel(tabId);
@@ -103,6 +121,7 @@ export function MarkdownFormattedEditor({ tabId }: Props) {
         key={tabId}
         ref={editorRef}
         markdown={initialMarkdown}
+        autoFocus={{ defaultSelection: "rootEnd", preventScroll: true }}
         onChange={onChange}
         plugins={plugins}
         contentEditableClassName="md-formatted-content"

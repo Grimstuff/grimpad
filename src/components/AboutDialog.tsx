@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import grimsoftIcon from "../assets/grimsoft-icon.jpg";
 
 /** Fallback if Tauri getVersion is unavailable (browser preview). */
-const FALLBACK_VERSION = "0.4.0";
+const FALLBACK_VERSION = "0.5.0";
 
 interface AboutDialogProps {
   open: boolean;

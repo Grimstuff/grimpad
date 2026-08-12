@@ -54,6 +54,9 @@ ehthumbs.db
 *.sw?
 *~
 
+# Local idea scratchpad (not shipped)
+.grok/
+
 # Misc tooling / caches
 *.tsbuildinfo
 .turbo

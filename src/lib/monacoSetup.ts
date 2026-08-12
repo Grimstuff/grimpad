@@ -1,30 +1,51 @@
 import { loader } from "@monaco-editor/react";
-import type * as Monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
+// 0.56 exports remap monaco-editor/X → esm/vs/X (not esm/vs/esm/vs/X)
+import editorWorker from "monaco-editor/editor/editor.worker?worker&inline";
+import jsonWorker from "monaco-editor/language/json/json.worker?worker&inline";
+import cssWorker from "monaco-editor/language/css/css.worker?worker&inline";
+import htmlWorker from "monaco-editor/language/html/html.worker?worker&inline";
+import tsWorker from "monaco-editor/language/typescript/ts.worker?worker&inline";
 
 let configured = false;
 let themesReady = false;
 
+type MonacoApi = typeof monaco;
+
 /**
- * Load Monaco's official AMD build from /monaco/vs (copied into public/ by scripts/copy-monaco.mjs).
- * This is the setup that worked before CSP / ESM experiments.
+ * Vite bundles workers as blobs/assets. That works in `tauri dev` (HTTP)
+ * and in the packaged exe (tauri.localhost) — unlike AMD /monaco/vs.
  */
+function installMonacoWorkers(): void {
+  const g = globalThis as typeof globalThis & {
+    MonacoEnvironment?: { getWorker: (_id: string, label: string) => Worker };
+  };
+  if (g.MonacoEnvironment) return;
+  g.MonacoEnvironment = {
+    getWorker(_id: string, label: string) {
+      if (label === "json") return new jsonWorker();
+      if (label === "css" || label === "scss" || label === "less") return new cssWorker();
+      if (label === "html" || label === "handlebars" || label === "razor") {
+        return new htmlWorker();
+      }
+      if (label === "typescript" || label === "javascript") return new tsWorker();
+      return new editorWorker();
+    },
+  };
+}
+
 export function setupMonacoLoader(): void {
   if (configured) return;
   configured = true;
-
-  loader.config({
-    paths: {
-      // Served from public/monaco/vs (dev) and dist/monaco/vs (production)
-      vs: "/monaco/vs",
-    },
-  });
+  installMonacoWorkers();
+  loader.config({ monaco });
 }
 
-export function registerThemes(monaco: typeof Monaco): void {
+export function registerThemes(m: MonacoApi): void {
   if (themesReady) return;
   themesReady = true;
 
-  monaco.editor.defineTheme("grimpad-dark", {
+  m.editor.defineTheme("grimpad-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [
@@ -54,7 +75,7 @@ export function registerThemes(monaco: typeof Monaco): void {
     },
   });
 
-  monaco.editor.defineTheme("grimpad-light", {
+  m.editor.defineTheme("grimpad-light", {
     base: "vs",
     inherit: true,
     rules: [
@@ -79,14 +100,14 @@ export function registerThemes(monaco: typeof Monaco): void {
 }
 
 export function applyModelLanguage(
-  monaco: typeof Monaco,
-  model: Monaco.editor.ITextModel,
+  m: MonacoApi,
+  model: monaco.editor.ITextModel,
   language: string,
 ): void {
   if (model.isDisposed()) return;
   try {
     if (model.getLanguageId() !== language) {
-      monaco.editor.setModelLanguage(model, language);
+      m.editor.setModelLanguage(model, language);
     }
   } catch (e) {
     console.warn("applyModelLanguage", language, e);
@@ -94,10 +115,10 @@ export function applyModelLanguage(
 }
 
 /** Quiet TS/JS diagnostics when the TS language service is present. */
-export function quietTypescriptDiagnostics(monaco: typeof Monaco): void {
+export function quietTypescriptDiagnostics(m: MonacoApi): void {
   try {
     const ts = (
-      monaco.languages as unknown as {
+      m.languages as unknown as {
         typescript?: {
           typescriptDefaults?: { setDiagnosticsOptions: (o: object) => void };
           javascriptDefaults?: { setDiagnosticsOptions: (o: object) => void };
@@ -113,10 +134,10 @@ export function quietTypescriptDiagnostics(monaco: typeof Monaco): void {
   }
 }
 
-export async function ensureMonaco(): Promise<typeof Monaco> {
+export async function ensureMonaco(): Promise<MonacoApi> {
   setupMonacoLoader();
-  const monaco = await loader.init();
-  registerThemes(monaco);
-  quietTypescriptDiagnostics(monaco);
-  return monaco;
+  const api = await loader.init();
+  registerThemes(api);
+  quietTypescriptDiagnostics(api);
+  return api;
 }
