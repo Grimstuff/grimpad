@@ -33,6 +33,8 @@ export function AppChrome() {
   const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const wordWrap = useSettingsStore((s) => s.wordWrap);
   const toggleWordWrap = useSettingsStore((s) => s.toggleWordWrap);
+  const confirmClose = useSettingsStore((s) => s.confirmClose);
+  const toggleConfirmClose = useSettingsStore((s) => s.toggleConfirmClose);
 
   // Track maximize state for the restore/maximize glyph
   useEffect(() => {
@@ -227,6 +229,14 @@ export function AppChrome() {
           <div className="menu-sep" />
           <button type="button" className="menu-option" onClick={() => run(() => toggleWordWrap())}>
             {wordWrap ? "✓ Word wrap" : "Word wrap"}
+          </button>
+          <button
+            type="button"
+            className="menu-option"
+            title="When on, quitting with unsaved edits asks Save / Don't save"
+            onClick={() => run(() => toggleConfirmClose())}
+          >
+            {confirmClose ? "✓ Confirm close" : "Confirm close"}
           </button>
           <div className="menu-sep" />
           <div className="menu-theme-label">Theme</div>

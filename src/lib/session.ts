@@ -4,6 +4,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import type { DocViewMode } from "./languages";
 import { isMarkdownLike } from "./languages";
 import { getFileMeta, readFile } from "./fileService";
+import { useSettingsStore } from "../store/settingsStore";
 import { useTabsStore } from "../store/tabsStore";
 
 const SESSION_VERSION = 1 as const;
@@ -163,8 +164,10 @@ async function handleCloseRequested(
 
   const store = useTabsStore.getState();
   const dirty = store.tabs.filter((t) => t.isDirty);
+  const confirmClose = useSettingsStore.getState().confirmClose;
 
-  if (dirty.length > 0) {
+  // Optional quit prompt (session still always snapshots dirty buffers)
+  if (confirmClose && dirty.length > 0) {
     const names =
       dirty.length === 1
         ? `"${dirty[0]!.title}"`

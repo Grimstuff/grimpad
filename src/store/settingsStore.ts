@@ -7,6 +7,8 @@ interface SettingsState {
   resolvedTheme: "light" | "dark";
   fontSize: number;
   wordWrap: boolean;
+  /** When true, quitting with dirty tabs prompts Save / Don't save. */
+  confirmClose: boolean;
   setThemeMode: (mode: ThemeMode) => void;
   setResolvedTheme: (theme: "light" | "dark") => void;
   setFontSize: (size: number) => void;
@@ -14,6 +16,8 @@ interface SettingsState {
   resetFontSize: () => void;
   setWordWrap: (wrap: boolean) => void;
   toggleWordWrap: () => void;
+  setConfirmClose: (on: boolean) => void;
+  toggleConfirmClose: () => void;
 }
 
 export const DEFAULT_FONT = 14;
@@ -23,6 +27,7 @@ export const MAX_FONT = 32;
 const FONT_KEY = "grimpad.fontSize";
 const THEME_KEY = "grimpad.themeMode";
 const WRAP_KEY = "grimpad.wordWrap";
+const CONFIRM_CLOSE_KEY = "grimpad.confirmClose";
 
 function detectSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";
@@ -66,6 +71,17 @@ function loadStoredWordWrap(): boolean {
   return true;
 }
 
+function loadStoredBool(key: string, defaultValue: boolean): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === "0" || raw === "false") return false;
+    if (raw === "1" || raw === "true") return true;
+  } catch {
+    /* ignore */
+  }
+  return defaultValue;
+}
+
 function persist(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
@@ -82,6 +98,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     initialTheme === "system" ? detectSystemTheme() : initialTheme,
   fontSize: typeof window !== "undefined" ? loadStoredFontSize() : DEFAULT_FONT,
   wordWrap: typeof window !== "undefined" ? loadStoredWordWrap() : true,
+  confirmClose:
+    typeof window !== "undefined" ? loadStoredBool(CONFIRM_CLOSE_KEY, true) : true,
 
   setThemeMode: (mode) => {
     const resolved = mode === "system" ? detectSystemTheme() : mode;
@@ -116,6 +134,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   toggleWordWrap: () => {
     get().setWordWrap(!get().wordWrap);
+  },
+
+  setConfirmClose: (on) => {
+    set({ confirmClose: on });
+    persist(CONFIRM_CLOSE_KEY, on ? "1" : "0");
+  },
+
+  toggleConfirmClose: () => {
+    get().setConfirmClose(!get().confirmClose);
   },
 }));
 
