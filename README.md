@@ -40,7 +40,7 @@ Requirements:
 * **WebView2** (preinstalled on modern Windows)
 
 ```bash
-git clone <your-repo-url> grimpad
+git clone https://github.com/Grimstuff/grimpad.git
 cd grimpad
 npm install          # also copies Monaco → public/monaco via postinstall
 npm run tauri dev    # development window
