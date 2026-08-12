@@ -1,5 +1,6 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// GUI app — no console window in debug or release (drop-on-exe / Open with stay clean).
+// `tauri dev` still shows logs in the parent terminal that launched cargo.
+#![windows_subsystem = "windows"]
 
 fn main() {
     grimpad_lib::run()

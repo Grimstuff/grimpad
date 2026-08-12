@@ -336,21 +336,34 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   },
 
   openPaths: async (paths) => {
-    for (const path of paths) {
-      const existing = get().tabs.find((t) => t.path === path);
+    const norm = (p: string) => p.replace(/\//g, "\\").toLowerCase();
+    let lastOpened: TabId | null = null;
+
+    for (const raw of paths) {
+      const path = raw.trim();
+      if (!path) continue;
+
+      const existing = get().tabs.find(
+        (t) => t.path && norm(t.path) === norm(path),
+      );
       if (existing) {
         get().activateTab(existing.id);
+        lastOpened = existing.id;
         continue;
       }
       try {
         const content = await readFile(path);
         const id = get().createTab({ path, content, title: titleFromPath(path) });
         get().markDirty(id, false);
+        lastOpened = id;
       } catch (e) {
         console.error(e);
         alert(`Could not open file:\n${path}\n\n${e}`);
       }
     }
+
+    // Focus the last file from this open batch (e.g. CLI / Open with)
+    if (lastOpened) get().activateTab(lastOpened);
   },
 
   saveActive: async () => {

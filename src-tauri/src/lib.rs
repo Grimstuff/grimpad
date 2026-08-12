@@ -116,6 +116,35 @@ fn load_session(app: AppHandle) -> Result<Option<String>, String> {
     Ok(Some(data))
 }
 
+/// Paths passed on the command line (drop file onto .exe, Open with, file association).
+/// Skips flags and non-files. Canonicalizes so open/session path matching is consistent.
+#[tauri::command]
+fn get_launch_paths() -> Vec<String> {
+    std::env::args()
+        .skip(1)
+        .filter_map(|arg| {
+            if arg.starts_with('-') || arg.contains("://") {
+                return None;
+            }
+            let path = PathBuf::from(&arg);
+            if !path.is_file() {
+                return None;
+            }
+            Some(normalize_path_display(&path))
+        })
+        .collect()
+}
+
+/// Strip Windows `\\?\` extended prefix after canonicalize.
+fn normalize_path_display(path: &std::path::Path) -> String {
+    let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let s = resolved.to_string_lossy();
+    s.strip_prefix(r"\\?\")
+        .or_else(|| s.strip_prefix("//?/"))
+        .unwrap_or(&s)
+        .replace('/', "\\")
+}
+
 /// Read the Windows personalization accent color (not CSS AccentColor, which WebView often mishandles).
 #[tauri::command]
 fn get_system_accent() -> Result<AccentColors, String> {
@@ -233,6 +262,7 @@ pub fn run() {
             read_file_content,
             write_file_content,
             get_file_meta,
+            get_launch_paths,
             get_system_accent,
             save_session,
             load_session

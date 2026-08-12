@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import grimsoftIcon from "../assets/grimsoft-icon.jpg";
+import appIcon from "../assets/app-icon.png";
 
 /** Fallback if Tauri getVersion is unavailable (browser preview). */
-const FALLBACK_VERSION = "0.2.0";
+const FALLBACK_VERSION = "0.3.0";
 
 interface AboutDialogProps {
   open: boolean;
@@ -53,8 +53,8 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
       >
         <img
           className="about-icon"
-          src={grimsoftIcon}
-          alt="Grimsoft"
+          src={appIcon}
+          alt="Grimpad"
           width={72}
           height={72}
           draggable={false}

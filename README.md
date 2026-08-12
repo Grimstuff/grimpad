@@ -2,7 +2,7 @@
 
 A lightweight, Fluent-inspired multi-tab notepad for Windows — simple like [Notepads](https://www.notepadsapp.com/), with **VS Code–class syntax highlighting** via the [Monaco Editor](https://microsoft.github.io/monaco-editor/) and **live markdown** via [MDXEditor](https://mdxeditor.dev/).
 
-**Status:** beta / release candidate (`0.2.0`)  
+**Status:** beta / release candidate (`0.3.0`)  
 **License:** [MIT](./LICENSE)
 
 ## Features
@@ -21,6 +21,7 @@ A lightweight, Fluent-inspired multi-tab notepad for Windows — simple like [No
 * **Light / dark / system** chrome theme; Windows accent color on chrome
 * **Window size/position** remembered across launches
 * **Drag-and-drop** files onto the window to open
+* **Open with / drop on exe** — cold-start opens the requested file(s)
 
 ## Stack
 

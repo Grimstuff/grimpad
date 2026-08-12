@@ -20,12 +20,25 @@ dist-ssr
 
 # Tauri / Rust build artifacts
 src-tauri/target
-src-tauri/gen/schemas
+src-tauri/gen
+src-tauri/WixTools
 *.pdb
+*.exe
+*.msi
+!scripts/**
+
+# Staging copies for GitHub uploads (local only)
+**/github-assets/
+release/
+releases/
 
 # Monaco AMD build — copied by postinstall (scripts/copy-monaco.mjs)
 # Regenerated on `npm install`; do not commit (~23 MB).
 public/monaco
+
+# Mobile icon trees if `tauri icon` regenerates them (Windows-first app)
+src-tauri/icons/ios/
+src-tauri/icons/android/
 
 # Editor / OS
 .vscode/*
@@ -34,13 +47,20 @@ public/monaco
 .DS_Store
 Thumbs.db
 Desktop.ini
+ehthumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*~
 
-# Misc
+# Misc tooling / caches
 *.tsbuildinfo
 .turbo
 coverage
+.cache
+.parcel-cache
+.eslintcache
+*.orig
+*.bak

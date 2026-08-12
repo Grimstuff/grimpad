@@ -47,13 +47,23 @@ export function EditorPane() {
       .then(async (monaco) => {
         if (cancelled) return;
         setMonaco(monaco);
-        // Prefer last session; otherwise open a blank tab
+
+        // CLI / "Open with" / drop-on-exe paths (must run after Monaco exists)
+        const { getLaunchFilePaths } = await import("../lib/launchFiles");
+        const launchPaths = await getLaunchFilePaths();
+        if (cancelled) return;
+
         const { restoreSession } = await import("../lib/session");
         const restored = await restoreSession();
         if (cancelled) return;
-        if (!restored) {
+
+        if (launchPaths.length > 0) {
+          // Session tabs first (if any), then open requested files and focus them
+          await useTabsStore.getState().openPaths(launchPaths);
+        } else if (!restored) {
           useTabsStore.getState().ensureInitialTab();
         }
+
         setReady(true);
       })
       .catch((e: unknown) => {
