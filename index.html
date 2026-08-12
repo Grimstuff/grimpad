@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg" href="/branding/grimsoft-icon.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grimpad</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+        background: #1e1e1e;
+        color: #e0e0e0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+      #boot {
+        display: grid;
+        place-items: center;
+        height: 100%;
+        font-size: 13px;
+        opacity: 0.55;
+        padding: 24px;
+        box-sizing: border-box;
+        text-align: center;
+        /* Avoid a jarring white flash while modules load */
+        background: #1e1e1e;
+      }
+      #boot pre {
+        text-align: left;
+        max-width: 90vw;
+        overflow: auto;
+        color: #ff99a4;
+        background: #2a2a2a;
+        padding: 12px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+      }
+    </style>
+    <script>
+      // Surface load errors even if React never mounts (blank WebView diagnosis).
+      window.addEventListener("error", function (e) {
+        var boot = document.getElementById("boot");
+        if (!boot) return;
+        boot.innerHTML =
+          "<div><strong>Script error</strong></div><pre></pre>";
+        boot.querySelector("pre").textContent =
+          (e.message || "unknown") +
+          "\n" +
+          (e.filename || "") +
+          ":" +
+          (e.lineno || "") +
+          "\n" +
+          (e.error && e.error.stack ? e.error.stack : "");
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var boot = document.getElementById("boot");
+        if (!boot) return;
+        var reason = e.reason;
+        boot.innerHTML =
+          "<div><strong>Unhandled promise rejection</strong></div><pre></pre>";
+        boot.querySelector("pre").textContent =
+          reason && reason.stack
+            ? reason.stack
+            : String(reason || "unknown rejection");
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot">Starting Grimpad…</div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
