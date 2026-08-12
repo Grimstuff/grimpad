@@ -2,7 +2,7 @@
 
 A lightweight, Fluent-inspired multi-tab notepad for Windows — simple like [Notepads](https://www.notepadsapp.com/), with **VS Code–class syntax highlighting** via the [Monaco Editor](https://microsoft.github.io/monaco-editor/) and **live markdown** via [MDXEditor](https://mdxeditor.dev/).
 
-**Status:** beta / release candidate (`0.3.0`)  
+**Status:** beta (`0.4.0`)  
 **License:** [MIT](./LICENSE)
 
 ## Features
