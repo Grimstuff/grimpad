@@ -66,8 +66,6 @@ Installers / exe land under `src-tauri/target/release/` and `src-tauri/target/re
 
 A fresh clone only needs the tracked source; the rest is recreated by install/build.
 
-**Note:** CSP is intentionally open (`null`) so Monaco’s AMD CSS/workers load correctly in WebView2. Tight CSP broke highlighting and line layout.
-
 ## Session data & privacy
 
 Open-tab state is stored at:
@@ -80,7 +78,7 @@ This includes full buffer text for dirty/untitled tabs (and content snapshots). 
 
 * File open/save goes through custom Tauri commands with a **32 MiB** size cap.
 * Capabilities are limited to dialogs, window controls, and window-state — no shell opener, no broad FS plugin.
-* WebView CSP is currently **disabled** so Monaco can load its editor CSS/workers (local assets only; no remote pages).
+* WebView **CSP** is enabled with a Monaco-friendly policy (local assets + `blob` workers; no random remote scripts).
 
 ## Shortcuts
 
