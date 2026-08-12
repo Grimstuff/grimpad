@@ -84,10 +84,8 @@ npm run tauri dev     # development
 npm run tauri build   # release exe + installers
 ```
 
-## Developed with AI
-
-Grimpad is a human-directed project. I use [Grok](https://grok.com/) (xAI) as a pair programmer for scaffolding, implementation, and debugging. I review the result and own the product decisions. This is disclosure, not a claim that the app writes itself.
-
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+Coded with use of AI.
