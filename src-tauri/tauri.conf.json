@@ -28,7 +28,19 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self' customprotocol: asset: https://asset.localhost http://asset.localhost",
+        "connect-src": "ipc: http://ipc.localhost https://ipc.localhost",
+        "img-src": "'self' asset: https://asset.localhost http://asset.localhost blob: data:",
+        "font-src": "'self' data: asset: https://asset.localhost http://asset.localhost",
+        "style-src": "'self' 'unsafe-inline' asset: https://asset.localhost http://asset.localhost",
+        "script-src": "'self' 'unsafe-eval' 'wasm-unsafe-eval' 'unsafe-inline' blob: asset: https://asset.localhost http://asset.localhost",
+        "worker-src": "'self' blob: data: asset: https://asset.localhost http://asset.localhost",
+        "child-src": "'self' blob: data: asset: https://asset.localhost http://asset.localhost",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "form-action": "'self'"
+      }
     }
   },
   "bundle": {
