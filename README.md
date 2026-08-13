@@ -9,7 +9,9 @@
 
 ## What is Grimpad?
 
-A modern, lightweight Fluent-style notepad for Windows - tabs, syntax highlighting, and live markdown, good for notes *and* viewing scripts. Under the hood it uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) (the same engine as VS Code) plus [MDXEditor](https://mdxeditor.dev/) for live markdown.
+A modern, minimalist Fluent-style notepad for Windows with tabs, syntax highlighting, and live markdown. Good for notes *and* viewing scripts. 
+
+Under the hood it uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) (the same engine as VS Code) plus [MDXEditor](https://mdxeditor.dev/) for live markdown.
 
 It is a personal project, developed with AI. 
 
