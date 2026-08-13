@@ -9,12 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Grimstuff/grimpad/releases/latest"><img src="https://img.shields.io/github/v/release/Grimstuff/grimpad?style=flat-square&label=latest" alt="Latest release"></a>
-  <a href="https://github.com/Grimstuff/grimpad/releases"><img src="https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square" alt="Windows"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT"></a>
-</p>
-
-<p align="center">
   <img src="docs/screenshot.png" alt="Grimpad — tabs, Monaco highlighting, and About" width="880">
 </p>
 
