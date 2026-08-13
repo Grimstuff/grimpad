@@ -5,7 +5,7 @@
 <h1 align="center">Grimpad</h1>
 
 <p align="center">
-  A modern, lightweight notepad for Windows — tabs, syntax highlighting, and live markdown.
+  A modern, lightweight notepad for Windows — tabs, syntax highlighting, and live markdown developed with AI.
 </p>
 
 <p align="center">
