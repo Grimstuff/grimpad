@@ -19,29 +19,15 @@ It is a personal project, developed with AI.
 
 * **Tabs**
 * **Syntax Highlighting**
-* **Markdown**
-* **Session restore**
+* **Markdown Formatting**
+* **Session Restoring**
 * **Dark Theme**
   
 ## Downloads
 
 Get the latest Windows x64 build from **[Releases](https://github.com/Grimstuff/grimpad/releases/latest)**.
 
-Windows will complain since the exe is unsigned. More Info allows a bypass. 
-
-## Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` / `Ctrl+T` | New tab |
-| `Ctrl+O` | Open |
-| `Ctrl+S` / `Ctrl+Shift+S` | Save / Save as |
-| `Ctrl+W` | Close tab |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
-| `Ctrl+1`…`9` | Jump to tab |
-| `Ctrl+F` / `Ctrl+H` | Find / replace |
-| `Ctrl+G` | Go to line |
-| `Ctrl++` / `-` / `0` | Zoom in / out / reset |
+Windows may complain the exe is unsigned. 'More Info' allows you to bypass. 
 
 
 ## Build from source
