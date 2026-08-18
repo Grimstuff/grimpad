@@ -5,6 +5,86 @@ import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore, type ThemeMode } from "../store/settingsStore";
 import { AboutDialog } from "./AboutDialog";
 
+function tabEls(list: HTMLElement): HTMLElement[] {
+  return [...list.querySelectorAll<HTMLElement>("[data-tab-id]")];
+}
+
+/** Tab edges in the list’s scroll content (not offsetParent). */
+function tabRange(list: HTMLElement, tab: HTMLElement): { left: number; right: number } {
+  const lr = list.getBoundingClientRect();
+  const tr = tab.getBoundingClientRect();
+  const left = tr.left - lr.left + list.scrollLeft;
+  return { left, right: left + tr.width };
+}
+
+function clampTabScroll(list: HTMLElement, left: number): number {
+  const max = Math.max(0, list.scrollWidth - list.clientWidth);
+  return Math.max(0, Math.min(max, Math.round(left)));
+}
+
+/** › brings the next cut-off tab fully in, × flush to the right clip. ‹ goes one tab back. */
+function seekAlignRight(list: HTMLElement, from: number, dir: -1 | 1): number {
+  const viewRight = from + list.clientWidth;
+  const ranges = tabEls(list).map((tab) => tabRange(list, tab));
+  if (dir > 0) {
+    const cut = ranges.findIndex((m) => m.right > viewRight + 2);
+    if (cut < 0) return clampTabScroll(list, list.scrollWidth);
+    // At the far left the rightmost tab is often half-shown. Snapping that
+    // one flush first feels like a dead click — skip to the tab after it.
+    const visiblePx = viewRight - ranges[cut].left;
+    const target = visiblePx > 12 && ranges[cut + 1] ? ranges[cut + 1] : ranges[cut];
+    return clampTabScroll(list, target.right - list.clientWidth);
+  }
+  let lastFullyIn = -1;
+  for (let i = 0; i < ranges.length; i++) {
+    if (ranges[i].right <= viewRight + 2) lastFullyIn = i;
+  }
+  if (lastFullyIn <= 0) return 0;
+  return clampTabScroll(list, ranges[lastFullyIn - 1].right - list.clientWidth);
+}
+
+const tabScrollAnim = { raf: 0 };
+
+function scrollTabListTo(list: HTMLElement, left: number, pending: { current: number | null }) {
+  const next = clampTabScroll(list, left);
+  pending.current = next;
+  const start = list.scrollLeft;
+  const dist = next - start;
+  if (Math.abs(dist) < 1) return;
+  cancelAnimationFrame(tabScrollAnim.raf);
+  const t0 = performance.now();
+  const dur = 180;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - t0) / dur);
+    const eased = 1 - (1 - t) ** 3;
+    list.scrollLeft = start + dist * eased;
+    if (t < 1) tabScrollAnim.raf = requestAnimationFrame(step);
+    else {
+      list.scrollLeft = next;
+      tabScrollAnim.raf = 0;
+    }
+  };
+  tabScrollAnim.raf = requestAnimationFrame(step);
+}
+
+/** Keep a tab fully inside the strip; flush its × to the right if it was clipped there. */
+function ensureTabFullyVisible(
+  list: HTMLElement,
+  tab: HTMLElement,
+  pending: { current: number | null },
+) {
+  const viewL = pending.current ?? list.scrollLeft;
+  const viewR = viewL + list.clientWidth;
+  const { left: tabL, right: tabR } = tabRange(list, tab);
+  if (tabL >= viewL - 1 && tabR <= viewR + 1) return;
+
+  if (tabR > viewR + 1) {
+    scrollTabListTo(list, tabR - list.clientWidth, pending);
+    return;
+  }
+  scrollTabListTo(list, tabL, pending);
+}
+
 /** Frameless chrome: ☰ + tabs + ＋ | drag region | window controls */
 export function AppChrome() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,6 +95,7 @@ export function AppChrome() {
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
+  const pendingTabScroll = useRef<number | null>(null);
   /** True when tabs don't all fit — both seek arrows stay mounted so layout doesn't jump. */
   const [tabsOverflow, setTabsOverflow] = useState(false);
   const [canSeekLeft, setCanSeekLeft] = useState(false);
@@ -78,42 +159,60 @@ export function AppChrome() {
   const seekTabs = (dir: -1 | 1) => {
     const el = tabListRef.current;
     if (!el) return;
-    // ~one tab width
-    el.scrollBy({ left: dir * 140, behavior: "smooth" });
+    const from = pendingTabScroll.current ?? el.scrollLeft;
+    scrollTabListTo(el, seekAlignRight(el, from, dir), pendingTabScroll);
+    updateTabSeek();
   };
 
-  // Keep seek arrows in sync with tab list overflow; wheel → horizontal seek
+  // Keep seek arrows in sync; wheel snaps one tab so the right edge is a close button
   useLayoutEffect(() => {
     updateTabSeek();
     const el = tabListRef.current;
     if (!el) return;
+    let acc = 0;
     const onScroll = () => updateTabSeek();
+    const onScrollEnd = () => {
+      pendingTabScroll.current = null;
+      updateTabSeek();
+    };
     const onWheel = (e: WheelEvent) => {
       if (el.scrollWidth <= el.clientWidth) return;
       const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (delta === 0) return;
       e.preventDefault();
-      el.scrollLeft += delta;
+      acc += delta;
+      if (Math.abs(acc) < 40) return;
+      const dir: -1 | 1 = acc > 0 ? 1 : -1;
+      acc = 0;
+      const from = pendingTabScroll.current ?? el.scrollLeft;
+      scrollTabListTo(el, seekAlignRight(el, from, dir), pendingTabScroll);
       updateTabSeek();
     };
     el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scrollend", onScrollEnd);
     el.addEventListener("wheel", onWheel, { passive: false });
-    const ro = new ResizeObserver(() => updateTabSeek());
+    const ro = new ResizeObserver(() => {
+      if (activeTabId) {
+        const active = el.querySelector<HTMLElement>(`[data-tab-id="${activeTabId}"]`);
+        if (active) ensureTabFullyVisible(el, active, pendingTabScroll);
+      }
+      updateTabSeek();
+    });
     ro.observe(el);
     return () => {
       el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("scrollend", onScrollEnd);
       el.removeEventListener("wheel", onWheel);
       ro.disconnect();
     };
   }, [tabs.length, activeTabId]);
 
-  // Scroll active tab into view
+  // Active tab must be fully on-screen (close × clickable)
   useLayoutEffect(() => {
-    if (!activeTabId || !tabListRef.current) return;
-    const active = tabListRef.current.querySelector<HTMLElement>(
-      `[data-tab-id="${activeTabId}"]`,
-    );
-    active?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    const el = tabListRef.current;
+    if (!activeTabId || !el) return;
+    const active = el.querySelector<HTMLElement>(`[data-tab-id="${activeTabId}"]`);
+    if (active) ensureTabFullyVisible(el, active, pendingTabScroll);
     requestAnimationFrame(updateTabSeek);
   }, [activeTabId, tabs.length]);
 

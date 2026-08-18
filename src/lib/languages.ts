@@ -184,6 +184,11 @@ export function isMarkdownLike(id: string | null | undefined): boolean {
 
 export type DocViewMode = "source" | "formatted";
 
+/** Monaco registers many Freemarker2 dialect ids (tag-angle / interpolation-…). */
+function isHiddenPickerLanguage(id: string): boolean {
+  return id.toLowerCase().startsWith("freemarker2.");
+}
+
 /** Full picker list: curated first, then any extra Monaco-registered ids. */
 export function languagesForPicker(registeredIds?: string[]): { id: string; label: string }[] {
   const curated = SELECTABLE_LANGUAGES;
@@ -191,7 +196,7 @@ export function languagesForPicker(registeredIds?: string[]): { id: string; labe
 
   const known = new Set(curated.map((l) => l.id));
   const extras = registeredIds
-    .filter((id) => id && !known.has(id))
+    .filter((id) => id && !known.has(id) && !isHiddenPickerLanguage(id))
     .sort((a, b) => a.localeCompare(b))
     .map((id) => ({ id, label: id }));
 

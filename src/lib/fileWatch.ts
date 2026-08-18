@@ -76,7 +76,7 @@ async function checkTab(tabId: string): Promise<void> {
         }));
         useTabsStore.getState().markDirty(tabId, true);
       } else {
-        await refreshDiskBaseline(tabId);
+        await useTabsStore.getState().closeTab(tabId, { skipConfirm: true });
       }
     } finally {
       prompting.delete(tabId);

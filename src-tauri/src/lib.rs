@@ -145,6 +145,63 @@ fn normalize_path_display(path: &std::path::Path) -> String {
         .replace('/', "\\")
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WheelScroll {
+    /// "lines" | "page" | "none"
+    mode: String,
+    lines: u32,
+}
+
+/// Windows "Choose how many lines to scroll each time" (Control Panel / Settings).
+#[tauri::command]
+fn get_wheel_scroll() -> WheelScroll {
+    #[cfg(windows)]
+    {
+        return read_windows_wheel_scroll();
+    }
+    #[cfg(not(windows))]
+    {
+        WheelScroll {
+            mode: "lines".into(),
+            lines: 3,
+        }
+    }
+}
+
+#[cfg(windows)]
+fn read_windows_wheel_scroll() -> WheelScroll {
+    use winreg::enums::*;
+    use winreg::RegKey;
+
+    let n = (|| -> Option<u32> {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let desktop = hkcu.open_subkey("Control Panel\\Desktop").ok()?;
+        if let Ok(s) = desktop.get_value::<String, _>("WheelScrollLines") {
+            return s.parse().ok();
+        }
+        desktop.get_value::<u32, _>("WheelScrollLines").ok()
+    })()
+    .unwrap_or(3);
+
+    if n == 0 {
+        WheelScroll {
+            mode: "none".into(),
+            lines: 0,
+        }
+    } else if n == u32::MAX {
+        WheelScroll {
+            mode: "page".into(),
+            lines: 0,
+        }
+    } else {
+        WheelScroll {
+            mode: "lines".into(),
+            lines: n.min(100),
+        }
+    }
+}
+
 /// Read the Windows personalization accent color (not CSS AccentColor, which WebView often mishandles).
 #[tauri::command]
 fn get_system_accent() -> Result<AccentColors, String> {
@@ -263,6 +320,7 @@ pub fn run() {
             get_file_meta,
             get_launch_paths,
             get_system_accent,
+            get_wheel_scroll,
             save_session,
             load_session
         ])

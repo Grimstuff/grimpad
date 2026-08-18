@@ -73,6 +73,7 @@
 }
 
 .tab-list {
+  position: relative;
   display: flex;
   align-items: stretch;
   min-width: 0;

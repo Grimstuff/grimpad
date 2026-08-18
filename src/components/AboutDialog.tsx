@@ -4,7 +4,12 @@ import { createPortal } from "react-dom";
 import grimsoftIcon from "../assets/grimsoft-icon.jpg";
 
 /** Fallback if Tauri getVersion is unavailable (browser preview). */
-const FALLBACK_VERSION = "0.5.0";
+const FALLBACK_VERSION = "0.6";
+
+/** Show 0.6 instead of 0.6.0; keep a real patch if we ship one. */
+function displayVersion(v: string): string {
+  return v.replace(/\.0$/, "");
+}
 
 interface AboutDialogProps {
   open: boolean;
@@ -21,7 +26,7 @@ export function AboutDialog({ open, onClose }: AboutDialogProps) {
       try {
         const { getVersion } = await import("@tauri-apps/api/app");
         const v = await getVersion();
-        if (!cancelled && v) setVersion(v);
+        if (!cancelled && v) setVersion(displayVersion(v));
       } catch {
         /* browser / non-Tauri */
       }

@@ -75,7 +75,7 @@ interface TabsState {
     isDirty?: boolean;
   }) => TabId;
   activateTab: (id: TabId) => void;
-  closeTab: (id: TabId) => Promise<boolean>;
+  closeTab: (id: TabId, opts?: { skipConfirm?: boolean }) => Promise<boolean>;
   markDirty: (id: TabId, dirty: boolean) => void;
   openFiles: () => Promise<void>;
   openPaths: (paths: string[]) => Promise<void>;
@@ -362,12 +362,12 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     updateWindowTitle(tab);
   },
 
-  closeTab: async (id) => {
+  closeTab: async (id, opts) => {
     const state = get();
     const tab = state.tabs.find((t) => t.id === id);
     if (!tab) return true;
 
-    if (tab.isDirty && useSettingsStore.getState().confirmClose) {
+    if (!opts?.skipConfirm && tab.isDirty && useSettingsStore.getState().confirmClose) {
       const action = await confirmCloseDirty(tab.title);
       if (action === "cancel") return false;
       if (action === "save") {

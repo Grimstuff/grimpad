@@ -9,6 +9,11 @@ import {
 import { isCodeLanguage, isMarkdownLike } from "../lib/languages";
 import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore } from "../store/settingsStore";
+import {
+  getCachedWheelScroll,
+  monacoWheelSensitivity,
+  subscribeWheelScroll,
+} from "../lib/wheelScroll";
 import { MarkdownFormattedEditor } from "./MarkdownFormattedEditor";
 
 setupMonacoLoader();
@@ -21,6 +26,20 @@ function lineNumberOptions(code: boolean) {
     glyphMargin: false,
     renderLineHighlight: (code ? "line" : "none") as "line" | "none",
   };
+}
+
+function applyWindowsWheel(editor: Parameters<OnMount>[0]) {
+  const monaco = useTabsStore.getState()._monaco;
+  if (!monaco) return;
+  const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight);
+  const viewport = editor.getLayoutInfo().height;
+  editor.updateOptions({
+    mouseWheelScrollSensitivity: monacoWheelSensitivity(
+      getCachedWheelScroll(),
+      lineHeight,
+      viewport,
+    ),
+  });
 }
 
 export function EditorPane() {
@@ -125,6 +144,7 @@ export function EditorPane() {
       useTabsStore.getState().tabs.find((t) => t.id === useTabsStore.getState().activeTabId)
         ?.language ?? "plaintext";
     editor.updateOptions(lineNumberOptions(isCodeLanguage(lang)));
+    applyWindowsWheel(editor);
     editor.focus();
   };
 
@@ -135,10 +155,17 @@ export function EditorPane() {
   }, [resolvedTheme]);
 
   useEffect(() => {
+    return subscribeWheelScroll(() => {
+      if (editorRef.current) applyWindowsWheel(editorRef.current);
+    });
+  }, []);
+
+  useEffect(() => {
     editorRef.current?.updateOptions({
       fontSize,
       wordWrap: wordWrap ? "on" : "off",
     });
+    if (editorRef.current) applyWindowsWheel(editorRef.current);
   }, [fontSize, wordWrap]);
 
   useEffect(() => {

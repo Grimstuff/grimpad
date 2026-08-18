@@ -39,15 +39,15 @@ export async function confirmExternalChange(
   );
 }
 
-/** File deleted externally: Keep open = true */
+/** File deleted externally: Keep = true, Close = false */
 export async function confirmExternalDelete(title: string): Promise<boolean> {
   return ask(
-    `"${title}" was deleted or moved on disk.\n\nKeep the content open as unsaved?`,
+    `"${title}" was deleted or moved on disk.\n\nKeep the content open as unsaved, or close the tab?`,
     {
       title: "File missing",
       kind: "warning",
-      okLabel: "Keep open",
-      cancelLabel: "Dismiss",
+      okLabel: "Keep",
+      cancelLabel: "Close",
     },
   );
 }

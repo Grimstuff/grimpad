@@ -17,6 +17,7 @@ import {
 import "@mdxeditor/editor/style.css";
 import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore } from "../store/settingsStore";
+import { getCachedWheelScroll, wheelNotches } from "../lib/wheelScroll";
 
 interface Props {
   tabId: string;
@@ -27,6 +28,7 @@ interface Props {
  */
 export function MarkdownFormattedEditor({ tabId }: Props) {
   const editorRef = useRef<MDXEditorMethods>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const lastEmitted = useRef<string | null>(null);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const resolvedTheme = useSettingsStore((s) => s.resolvedTheme);
@@ -112,8 +114,34 @@ export function MarkdownFormattedEditor({ tabId }: Props) {
     [],
   );
 
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.defaultPrevented) return;
+      const notches = wheelNotches(e);
+      if (notches === 0) return;
+      const scroll = getCachedWheelScroll();
+      const linePx = fontSize * 1.55;
+      const step =
+        scroll.mode === "none"
+          ? 0
+          : scroll.mode === "page"
+            ? el.clientHeight
+            : scroll.lines * linePx;
+      if (step === 0) return;
+      e.preventDefault();
+      el.scrollTop += notches * step;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => {
+      el.removeEventListener("wheel", onWheel, true);
+    };
+  }, [fontSize]);
+
   return (
     <div
+      ref={hostRef}
       className={`md-formatted-host${resolvedTheme === "dark" ? " dark-editor" : ""}`}
       style={{ ["--md-font-size" as string]: `${fontSize}px` }}
     >
