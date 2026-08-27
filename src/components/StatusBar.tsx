@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useTabsStore } from "../store/tabsStore";
 import { MAX_FONT, MIN_FONT, useSettingsStore } from "../store/settingsStore";
 import { isMarkdownLike, languageLabel, languagesForPicker } from "../lib/languages";
+import { MONACO_GOTO_LINE, runMonacoAction } from "../lib/monacoActions";
 
 export function StatusBar() {
   const tab = useTabsStore((s) => s.tabs.find((t) => t.id === s.activeTabId) ?? null);
@@ -262,11 +263,15 @@ export function StatusBar() {
         </span>
       </div>
       <div className="status-right">
-        {/* Ln/Col only for source (Monaco); formatted MD view has no line map */}
-        {tab && (tab.viewMode ?? "source") !== "formatted" ? (
-          <span className="status-item">
+        {tab ? (
+          <button
+            type="button"
+            className="status-btn"
+            title="Go to line"
+            onClick={() => void runMonacoAction(MONACO_GOTO_LINE)}
+          >
             Ln {line}, Col {col}
-          </span>
+          </button>
         ) : null}
         {showMdToggle && tab ? (
           <button

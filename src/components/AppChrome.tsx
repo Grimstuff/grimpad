@@ -4,6 +4,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore, type ThemeMode } from "../store/settingsStore";
 import { AboutDialog } from "./AboutDialog";
+import {
+  MONACO_FIND,
+  MONACO_GOTO_LINE,
+  MONACO_REPLACE,
+  runMonacoAction,
+} from "../lib/monacoActions";
 
 function tabEls(list: HTMLElement): HTMLElement[] {
   return [...list.querySelectorAll<HTMLElement>("[data-tab-id]")];
@@ -293,35 +299,21 @@ export function AppChrome() {
           <button
             type="button"
             className="menu-option"
-            onClick={() =>
-              run(() => {
-                useTabsStore.getState()._editor?.trigger("menu", "actions.find", null);
-              })
-            }
+            onClick={() => run(() => runMonacoAction(MONACO_FIND))}
           >
             Find <span className="menu-shortcut">Ctrl+F</span>
           </button>
           <button
             type="button"
             className="menu-option"
-            onClick={() =>
-              run(() => {
-                useTabsStore
-                  .getState()
-                  ._editor?.trigger("menu", "editor.action.startFindReplaceAction", null);
-              })
-            }
+            onClick={() => run(() => runMonacoAction(MONACO_REPLACE))}
           >
             Replace <span className="menu-shortcut">Ctrl+H</span>
           </button>
           <button
             type="button"
             className="menu-option"
-            onClick={() =>
-              run(() => {
-                useTabsStore.getState()._editor?.trigger("menu", "editor.action.gotoLine", null);
-              })
-            }
+            onClick={() => run(() => runMonacoAction(MONACO_GOTO_LINE))}
           >
             Go to line… <span className="menu-shortcut">Ctrl+G</span>
           </button>

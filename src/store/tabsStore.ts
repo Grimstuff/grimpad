@@ -79,6 +79,8 @@ interface TabsState {
   markDirty: (id: TabId, dirty: boolean) => void;
   openFiles: () => Promise<void>;
   openPaths: (paths: string[]) => Promise<void>;
+  /** Load a saved file into an existing tab (used to replace the boot Untitled). */
+  loadFileIntoTab: (id: TabId, path: string, content: string) => void;
   saveActive: () => Promise<boolean>;
   saveActiveAs: () => Promise<boolean>;
   cycleTab: (dir: 1 | -1) => void;
@@ -105,6 +107,17 @@ const formattedTimers = new Map<TabId, ReturnType<typeof setTimeout>>();
 
 function latestText(get: () => TabsState, tabId: TabId, fallback: string): string {
   return get().getModel(tabId)?.getValue() ?? fallback;
+}
+
+/** Sole empty Untitled — safe to replace when opening a file from a blank window. */
+function replaceableUntitledId(get: () => TabsState): TabId | null {
+  const { tabs } = get();
+  if (tabs.length !== 1) return null;
+  const t = tabs[0];
+  if (t.path || t.isDirty) return null;
+  const text = get().getModel(t.id)?.getValue() ?? "";
+  if (text.trim() !== "") return null;
+  return t.id;
 }
 
 function maybeSwitchToFormattedMarkdown(get: () => TabsState, tabId: TabId) {
@@ -436,9 +449,40 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     await get().openPaths(paths);
   },
 
+  loadFileIntoTab: (id, path, content) => {
+    const monaco = get()._monaco;
+    const language = languageFromPath(path);
+    const title = titleFromPath(path);
+    const model = get()._models.get(id);
+    set((s) => ({
+      tabs: s.tabs.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              path,
+              title,
+              language,
+              isDirty: false,
+              languageLocked: true,
+              viewMode: isMarkdownLike(language) ? "formatted" : "source",
+            }
+          : t,
+      ),
+    }));
+    if (isAlive(model) && monaco) {
+      model.setValue(content);
+      applyModelLanguage(monaco, model, language);
+    }
+    get().markDirty(id, false);
+    get().activateTab(id);
+    updateWindowTitle(get().tabs.find((t) => t.id === id));
+    void import("../lib/diskBaseline").then((m) => m.refreshDiskBaseline(id));
+  },
+
   openPaths: async (paths) => {
     const norm = (p: string) => p.replace(/\//g, "\\").toLowerCase();
     let lastOpened: TabId | null = null;
+    let usedUntitled = false;
 
     for (const raw of paths) {
       const path = raw.trim();
@@ -454,16 +498,22 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       }
       try {
         const content = await readFile(path);
-        const id = get().createTab({ path, content, title: titleFromPath(path) });
-        get().markDirty(id, false);
-        lastOpened = id;
+        const reuse = !usedUntitled ? replaceableUntitledId(get) : null;
+        if (reuse) {
+          get().loadFileIntoTab(reuse, path, content);
+          usedUntitled = true;
+          lastOpened = reuse;
+        } else {
+          const id = get().createTab({ path, content, title: titleFromPath(path) });
+          get().markDirty(id, false);
+          lastOpened = id;
+        }
       } catch (e) {
         console.error(e);
         alert(`Could not open file:\n${path}\n\n${e}`);
       }
     }
 
-    // Focus the last file from this open batch (e.g. CLI / Open with)
     if (lastOpened) get().activateTab(lastOpened);
   },
 

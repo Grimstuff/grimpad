@@ -14,6 +14,10 @@ import {
   monacoWheelSensitivity,
   subscribeWheelScroll,
 } from "../lib/wheelScroll";
+import {
+  flushPendingMonacoAction,
+  subscribeForceLineNumbers,
+} from "../lib/monacoActions";
 import { MarkdownFormattedEditor } from "./MarkdownFormattedEditor";
 
 setupMonacoLoader();
@@ -56,7 +60,8 @@ export function EditorPane() {
   const resolvedTheme = useSettingsStore((s) => s.resolvedTheme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const wordWrap = useSettingsStore((s) => s.wordWrap);
-  const showLineNumbers = isCodeLanguage(activeLanguage);
+  const [forceLineNumbers, setForceLineNumbers] = useState(false);
+  const showLineNumbers = isCodeLanguage(activeLanguage) || forceLineNumbers;
 
   const showFormatted =
     !!activeTabId && isMarkdownLike(activeLanguage) && viewMode === "formatted";
@@ -143,9 +148,12 @@ export function EditorPane() {
     const lang =
       useTabsStore.getState().tabs.find((t) => t.id === useTabsStore.getState().activeTabId)
         ?.language ?? "plaintext";
-    editor.updateOptions(lineNumberOptions(isCodeLanguage(lang)));
+    editor.updateOptions(
+      lineNumberOptions(isCodeLanguage(lang) || forceLineNumbers),
+    );
     applyWindowsWheel(editor);
     editor.focus();
+    flushPendingMonacoAction(editor);
   };
 
   useEffect(() => {
@@ -159,6 +167,8 @@ export function EditorPane() {
       if (editorRef.current) applyWindowsWheel(editorRef.current);
     });
   }, []);
+
+  useEffect(() => subscribeForceLineNumbers(setForceLineNumbers), []);
 
   useEffect(() => {
     editorRef.current?.updateOptions({

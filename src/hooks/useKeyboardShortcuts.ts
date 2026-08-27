@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore } from "../store/settingsStore";
+import {
+  MONACO_FIND,
+  MONACO_GOTO_LINE,
+  MONACO_REPLACE,
+  runMonacoAction,
+} from "../lib/monacoActions";
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
@@ -55,6 +61,23 @@ export function useKeyboardShortcuts() {
         return;
       }
 
+      // Find / replace / go to line (switch markdown Formatted → Raw first)
+      if (!e.shiftKey && key === "f") {
+        e.preventDefault();
+        void runMonacoAction(MONACO_FIND);
+        return;
+      }
+      if (!e.shiftKey && key === "h") {
+        e.preventDefault();
+        void runMonacoAction(MONACO_REPLACE);
+        return;
+      }
+      if (!e.shiftKey && key === "g") {
+        e.preventDefault();
+        void runMonacoAction(MONACO_GOTO_LINE);
+        return;
+      }
+
       // Zoom: Ctrl+= / Ctrl++ / Ctrl+- / Ctrl+0
       if (key === "=" || key === "+") {
         e.preventDefault();
@@ -73,7 +96,7 @@ export function useKeyboardShortcuts() {
       }
     };
 
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 }
