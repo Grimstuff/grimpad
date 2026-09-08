@@ -43,7 +43,124 @@ fn write_file_content(path: String, content: String) -> Result<(), String> {
                 .map_err(|e| format!("Failed to create directory {}: {e}", parent.display()))?;
         }
     }
-    fs::write(&path, content).map_err(|e| format!("Failed to write {path}: {e}"))
+    write_file_best_effort(&path, &content)
+}
+
+fn is_access_denied(err: &std::io::Error) -> bool {
+    err.kind() == std::io::ErrorKind::PermissionDenied || err.raw_os_error() == Some(5)
+}
+
+fn write_file_best_effort(path: &str, content: &str) -> Result<(), String> {
+    match fs::write(path, content) {
+        Ok(()) => Ok(()),
+        Err(e) if is_access_denied(&e) => {
+            #[cfg(windows)]
+            {
+                write_via_shell_elevation(path, content).map_err(|elev| {
+                    if elev == "cancelled" {
+                        "Save cancelled (Windows asked for administrator permission).".into()
+                    } else {
+                        format!("Failed to write {path}: {e}. {elev}")
+                    }
+                })
+            }
+            #[cfg(not(windows))]
+            {
+                Err(format!("Failed to write {path}: {e}"))
+            }
+        }
+        Err(e) => Err(format!("Failed to write {path}: {e}")),
+    }
+}
+
+/// On access denied, copy via IFileOperation so Windows can show UAC for this save only.
+/// Grimpad itself stays non-admin.
+#[cfg(windows)]
+fn write_via_shell_elevation(dest: &str, content: &str) -> Result<(), String> {
+    use std::sync::mpsc;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let dest = dest.to_string();
+    let content = content.to_string();
+    let (tx, rx) = mpsc::channel();
+    std::thread::Builder::new()
+        .name("grimpad-elev-write".into())
+        .spawn(move || {
+            let r = (|| {
+                let tmp = std::env::temp_dir().join(format!(
+                    "grimpad-save-{}-{}.tmp",
+                    std::process::id(),
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_nanos())
+                        .unwrap_or(0)
+                ));
+                fs::write(&tmp, &content)
+                    .map_err(|e| format!("Could not write a temp copy: {e}"))?;
+                let result = ifile_operation_copy(&tmp, &dest);
+                let _ = fs::remove_file(&tmp);
+                result
+            })();
+            let _ = tx.send(r);
+        })
+        .map_err(|e| format!("elevate thread: {e}"))?;
+    rx.recv().map_err(|e| format!("elevate: {e}"))?
+}
+
+#[cfg(windows)]
+fn ifile_operation_copy(src: &std::path::Path, dest: &str) -> Result<(), String> {
+    use std::path::Path;
+    use windows::core::HSTRING;
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_APARTMENTTHREADED,
+    };
+    use windows::Win32::UI::Shell::{
+        FileOperation, IFileOperation, IShellItem, SHCreateItemFromParsingName,
+        FOF_NOCONFIRMATION, FOF_NOCONFIRMMKDIR, FOFX_SHOWELEVATIONPROMPT,
+    };
+
+    let dest_path = Path::new(dest);
+    let parent = dest_path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .ok_or_else(|| "Invalid destination path".to_string())?;
+    let name = dest_path
+        .file_name()
+        .ok_or_else(|| "Invalid destination file name".to_string())?;
+
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        let result = (|| {
+            let op: IFileOperation = CoCreateInstance(&FileOperation, None, CLSCTX_ALL)
+                .map_err(|e| format!("Shell file operation: {e}"))?;
+            op.SetOperationFlags(windows::Win32::UI::Shell::FILEOPERATION_FLAGS(
+                FOF_NOCONFIRMATION.0 | FOF_NOCONFIRMMKDIR.0 | FOFX_SHOWELEVATIONPROMPT.0,
+            ))
+            .map_err(|e| format!("SetOperationFlags: {e}"))?;
+
+            let src_item: IShellItem =
+                SHCreateItemFromParsingName(&HSTRING::from(src.as_os_str()), None)
+                    .map_err(|e| format!("temp item: {e}"))?;
+            let folder: IShellItem =
+                SHCreateItemFromParsingName(&HSTRING::from(parent.as_os_str()), None)
+                    .map_err(|e| format!("destination folder: {e}"))?;
+            let new_name = HSTRING::from(name);
+            op.CopyItem(&src_item, &folder, &new_name, None)
+                .map_err(|e| format!("CopyItem: {e}"))?;
+            op.PerformOperations().map_err(|e| {
+                let code = e.code().0 as u32;
+                // ERROR_CANCELLED / HRESULT_FROM_WIN32(1223)
+                if code == 0x800704C7 || code == 1223 {
+                    "cancelled".to_string()
+                } else {
+                    format!("Windows could not save with administrator permission: {e}")
+                }
+            })?;
+            Ok(())
+        })();
+        CoUninitialize();
+        result
+    }
 }
 
 #[derive(Serialize)]
@@ -290,6 +407,34 @@ fn relative_luminance(r: u8, g: u8, b: u8) -> f64 {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            use tauri::{Emitter, Manager};
+            let paths: Vec<String> = argv
+                .into_iter()
+                .skip(1)
+                .filter_map(|arg| {
+                    if arg.starts_with('-') || arg.contains("://") {
+                        return None;
+                    }
+                    let path = PathBuf::from(&arg);
+                    if !path.is_file() {
+                        return None;
+                    }
+                    Some(
+                        std::fs::canonicalize(&path)
+                            .unwrap_or(path)
+                            .to_string_lossy()
+                            .into_owned(),
+                    )
+                })
+                .collect();
+            let _ = app.emit("second-instance", paths);
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
         // Restore size/position while hidden; frontend shows after first paint
         // so the default-size flash never appears.
         .plugin(

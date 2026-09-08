@@ -9,6 +9,8 @@ interface SettingsState {
   wordWrap: boolean;
   /** When true, quitting with dirty tabs prompts Save / Don't save. */
   confirmClose: boolean;
+  /** When true, a second launch joins this app instead of a separate process. */
+  singleSession: boolean;
   setThemeMode: (mode: ThemeMode) => void;
   setResolvedTheme: (theme: "light" | "dark") => void;
   setFontSize: (size: number) => void;
@@ -18,6 +20,8 @@ interface SettingsState {
   toggleWordWrap: () => void;
   setConfirmClose: (on: boolean) => void;
   toggleConfirmClose: () => void;
+  setSingleSession: (on: boolean) => void;
+  toggleSingleSession: () => void;
 }
 
 export const DEFAULT_FONT = 14;
@@ -28,6 +32,7 @@ const FONT_KEY = "grimpad.fontSize";
 const THEME_KEY = "grimpad.themeMode";
 const WRAP_KEY = "grimpad.wordWrap";
 const CONFIRM_CLOSE_KEY = "grimpad.confirmClose";
+const SINGLE_SESSION_KEY = "grimpad.singleSession";
 
 function detectSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "dark";
@@ -100,6 +105,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   wordWrap: typeof window !== "undefined" ? loadStoredWordWrap() : true,
   confirmClose:
     typeof window !== "undefined" ? loadStoredBool(CONFIRM_CLOSE_KEY, true) : true,
+  singleSession:
+    typeof window !== "undefined" ? loadStoredBool(SINGLE_SESSION_KEY, true) : true,
 
   setThemeMode: (mode) => {
     const resolved = mode === "system" ? detectSystemTheme() : mode;
@@ -144,20 +151,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   toggleConfirmClose: () => {
     get().setConfirmClose(!get().confirmClose);
   },
+
+  setSingleSession: (on) => {
+    set({ singleSession: on });
+    persist(SINGLE_SESSION_KEY, on ? "1" : "0");
+  },
+
+  toggleSingleSession: () => {
+    get().setSingleSession(!get().singleSession);
+  },
 }));
 
 export function initThemeListener() {
-  // Apply stored theme to the document on boot
-  const { themeMode, resolvedTheme } = useSettingsStore.getState();
-  document.documentElement.dataset.theme =
-    themeMode === "system" ? detectSystemTheme() : resolvedTheme;
+  useSettingsStore.getState().setThemeMode("system");
 
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   const apply = () => {
-    const { themeMode: mode, setResolvedTheme } = useSettingsStore.getState();
-    if (mode === "system") {
-      setResolvedTheme(mq.matches ? "dark" : "light");
-    }
+    useSettingsStore.getState().setResolvedTheme(mq.matches ? "dark" : "light");
   };
   apply();
   mq.addEventListener("change", apply);

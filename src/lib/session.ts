@@ -48,6 +48,11 @@ function buildSnapshot(): SessionSnapshot | null {
 }
 
 export async function saveSessionToDisk(): Promise<void> {
+  try {
+    if (getCurrentWindow().label !== "main") return;
+  } catch {
+    /* not tauri */
+  }
   const snap = buildSnapshot();
   if (!snap) return;
   try {
@@ -78,14 +83,10 @@ export async function loadSessionFromDisk(): Promise<SessionSnapshot | null> {
  * Missing-on-disk paths become dirty untitled buffers (keep title + content).
  * @returns true if a session was restored
  */
-export async function restoreSession(): Promise<boolean> {
-  const snap = await loadSessionFromDisk();
-  if (!snap) return false;
-
+export async function applySessionSnapshot(snap: SessionSnapshot): Promise<boolean> {
   const store = useTabsStore.getState();
   if (!store._monaco) return false;
 
-  // Clear any boot state
   store.disposeAll();
 
   const ids: string[] = [];
@@ -133,6 +134,12 @@ export async function restoreSession(): Promise<boolean> {
   const idx = Math.min(Math.max(0, snap.activeIndex), ids.length - 1);
   store.activateTab(ids[idx]!);
   return true;
+}
+
+export async function restoreSession(): Promise<boolean> {
+  const snap = await loadSessionFromDisk();
+  if (!snap) return false;
+  return applySessionSnapshot(snap);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -200,9 +207,14 @@ async function handleCloseRequested(
     }
   }
 
-  flushSessionNow();
-  // Give the session write a brief chance to land
-  await new Promise((r) => setTimeout(r, 50));
+  try {
+    if (getCurrentWindow().label === "main") {
+      flushSessionNow();
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  } catch {
+    /* ignore */
+  }
   try {
     await getCurrentWindow().destroy();
   } catch (e) {

@@ -78,18 +78,27 @@ export function EditorPane() {
         setMonaco(monaco);
 
         // CLI / "Open with" / drop-on-exe paths (must run after Monaco exists)
-        const { getLaunchFilePaths } = await import("../lib/launchFiles");
-        const launchPaths = await getLaunchFilePaths();
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const { takeBootSnapshot, applySessionSnapshot } = await import("../lib/extraWindows");
+        const label = getCurrentWindow().label;
+        const boot = takeBootSnapshot(label);
         if (cancelled) return;
 
-        const { restoreSession } = await import("../lib/session");
-        const restored = await restoreSession();
-        if (cancelled) return;
-
-        if (launchPaths.length > 0) {
-          // Session tabs first (if any), then open requested files and focus them
-          await useTabsStore.getState().openPaths(launchPaths);
-        } else if (!restored) {
+        if (boot) {
+          await applySessionSnapshot(boot);
+        } else if (label === "main") {
+          const { getLaunchFilePaths } = await import("../lib/launchFiles");
+          const launchPaths = await getLaunchFilePaths();
+          if (cancelled) return;
+          const { restoreSession } = await import("../lib/session");
+          const restored = await restoreSession();
+          if (cancelled) return;
+          if (launchPaths.length > 0) {
+            await useTabsStore.getState().openPaths(launchPaths);
+          } else if (!restored) {
+            useTabsStore.getState().ensureInitialTab();
+          }
+        } else {
           useTabsStore.getState().ensureInitialTab();
         }
 

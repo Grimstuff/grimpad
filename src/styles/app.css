@@ -120,6 +120,7 @@
 
 .tab {
   position: relative;
+  cursor: grab;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -437,6 +438,34 @@
   border-radius: 6px;
   padding: 10px 12px;
   overflow: auto;
+}
+
+/* Fenced code: no language dropdown / trash chrome */
+.md-formatted-host [class*="codeMirrorToolbar"] {
+  display: none !important;
+}
+
+.md-formatted-host [class*="codeMirrorWrapper"] {
+  background: var(--gp-surface-elevated) !important;
+  border-color: var(--gp-border-subtle) !important;
+}
+
+.md-formatted-host .cm-editor,
+.md-formatted-host .cm-scroller,
+.md-formatted-host .cm-content {
+  background: var(--gp-surface-elevated) !important;
+  color: var(--gp-text) !important;
+}
+
+.md-formatted-host .cm-gutters {
+  background: transparent !important;
+  color: var(--gp-text-muted) !important;
+  border: none !important;
+}
+
+.md-formatted-host .cm-activeLine,
+.md-formatted-host .cm-activeLineGutter {
+  background: transparent !important;
 }
 
 .status-md-view.active {

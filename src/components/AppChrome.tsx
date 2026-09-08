@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useTabsStore } from "../store/tabsStore";
-import { useSettingsStore, type ThemeMode } from "../store/settingsStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { detachTabToNewWindow } from "../lib/extraWindows";
 import { AboutDialog } from "./AboutDialog";
 import {
   MONACO_FIND,
@@ -116,12 +117,12 @@ export function AppChrome() {
   const saveActive = useTabsStore((s) => s.saveActive);
   const saveActiveAs = useTabsStore((s) => s.saveActiveAs);
 
-  const themeMode = useSettingsStore((s) => s.themeMode);
-  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const wordWrap = useSettingsStore((s) => s.wordWrap);
   const toggleWordWrap = useSettingsStore((s) => s.toggleWordWrap);
   const confirmClose = useSettingsStore((s) => s.confirmClose);
   const toggleConfirmClose = useSettingsStore((s) => s.toggleConfirmClose);
+  const singleSession = useSettingsStore((s) => s.singleSession);
+  const toggleSingleSession = useSettingsStore((s) => s.toggleSingleSession);
 
   // Track maximize state for the restore/maximize glyph
   useEffect(() => {
@@ -272,12 +273,6 @@ export function AppChrome() {
     }
   };
 
-  const themeOptions: { id: ThemeMode; label: string }[] = [
-    { id: "system", label: "System" },
-    { id: "light", label: "Light" },
-    { id: "dark", label: "Dark" },
-  ];
-
   const menu = menuOpen
     ? createPortal(
         <div
@@ -329,18 +324,14 @@ export function AppChrome() {
           >
             {confirmClose ? "✓ Confirm close" : "Confirm close"}
           </button>
-          <div className="menu-sep" />
-          <div className="menu-theme-label">Theme</div>
-          {themeOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              className="menu-option"
-              onClick={() => run(() => setThemeMode(opt.id))}
-            >
-              {themeMode === opt.id ? `✓ ${opt.label}` : opt.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            className="menu-option"
+            title="When on, Open with / drop-on-exe / a second launch joins this window. Off opens another window. Drag a tab out anytime."
+            onClick={() => run(() => toggleSingleSession())}
+          >
+            {singleSession ? "✓ Single session" : "Single session"}
+          </button>
           <div className="menu-sep" />
           <button
             type="button"
@@ -410,7 +401,22 @@ export function AppChrome() {
                   aria-selected={active}
                   className={`tab${active ? " active" : ""}`}
                   title={tab.path ?? tab.title}
+                  draggable
                   onClick={() => activateTab(tab.id)}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/grimpad-tab", tab.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={(e) => {
+                    if (e.screenX === 0 && e.screenY === 0) return;
+                    const margin = 24;
+                    const out =
+                      e.screenX < window.screenX - margin ||
+                      e.screenY < window.screenY - margin ||
+                      e.screenX > window.screenX + window.outerWidth + margin ||
+                      e.screenY > window.screenY + window.outerHeight + margin;
+                    if (out) void detachTabToNewWindow(tab.id);
+                  }}
                   onMouseDown={(e) => {
                     if (e.button === 1) {
                       e.preventDefault();
@@ -429,6 +435,8 @@ export function AppChrome() {
                       e.stopPropagation();
                       void closeTab(tab.id);
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onDragStart={(e) => e.preventDefault()}
                   >
                     ×
                   </button>

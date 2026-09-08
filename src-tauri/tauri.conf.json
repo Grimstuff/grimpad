@@ -58,7 +58,24 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["txt", "text", "log", "md", "markdown", "mdx", "json", "jsonc", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "html", "htm", "css", "scss", "less", "xml", "svg", "yaml", "yml", "toml", "ini", "cfg", "conf", "py", "rs", "go", "java", "cs", "cpp", "c", "h", "hpp", "rb", "php", "sh", "bash", "ps1", "bat", "cmd", "sql", "r", "lua", "csv", "env", "gitignore", "editorconfig"],
+        "ext": [
+          "txt", "text", "log", "nfo", "inf", "ini", "cfg", "conf", "nsh", "properties",
+          "md", "markdown", "mdx", "mdown", "rst", "tex",
+          "json", "jsonc", "json5",
+          "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx",
+          "html", "htm", "xhtml", "css", "scss", "sass", "less",
+          "xml", "svg", "xsl", "xslt", "xsd", "dtd", "plist",
+          "yaml", "yml", "toml",
+          "py", "pyw", "pyi", "rs", "go", "java", "kt", "kts", "cs", "fs", "fsx",
+          "cpp", "cxx", "cc", "c", "h", "hpp", "hxx", "m", "mm",
+          "rb", "php", "phtml", "pl", "pm",
+          "sh", "bash", "zsh", "ps1", "psm1", "psd1", "bat", "cmd", "vbs",
+          "sql", "r", "lua", "swift", "dart", "vue", "svelte",
+          "graphql", "gql", "proto", "csv", "tsv",
+          "diff", "patch", "cmake", "mk", "asm",
+          "env", "gitignore", "gitattributes", "editorconfig", "htaccess", "npmrc",
+          "srt", "vtt", "reg"
+        ],
         "name": "Grimpad Document",
         "description": "Open with Grimpad",
         "role": "Editor"

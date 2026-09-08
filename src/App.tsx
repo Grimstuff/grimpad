@@ -10,6 +10,7 @@ import { initWheelScroll } from "./lib/wheelScroll";
 import { revealMainWindow } from "./lib/revealWindow";
 import { initSessionPersistence } from "./lib/session";
 import { initFileWatch } from "./lib/fileWatch";
+import { initSecondInstanceListener } from "./lib/extraWindows";
 import "./styles/tokens.css";
 import "./styles/app.css";
 
@@ -25,6 +26,7 @@ function App() {
     const unwheel = initWheelScroll();
     const unsession = initSessionPersistence();
     const unwatch = initFileWatch();
+    const unsecond = initSecondInstanceListener();
     void revealMainWindow();
     return () => {
       untheme();
@@ -32,6 +34,7 @@ function App() {
       unwheel();
       unsession();
       unwatch();
+      unsecond();
     };
   }, []);
 

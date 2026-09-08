@@ -153,7 +153,7 @@ export function MarkdownFormattedEditor({ tabId }: Props) {
         onChange={onChange}
         plugins={plugins}
         contentEditableClassName="md-formatted-content"
-        className="md-formatted-editor"
+        className={`md-formatted-editor${resolvedTheme === "dark" ? " dark-theme" : ""}`}
       />
     </div>
   );
