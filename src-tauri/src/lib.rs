@@ -252,14 +252,27 @@ fn get_launch_paths() -> Vec<String> {
         .collect()
 }
 
-/// Strip Windows `\\?\` extended prefix after canonicalize.
+/// `canonicalize` on Windows returns `\\?\C:\...` or `\\?\UNC\server\share\...`.
+/// Monaco treats a path that still starts with `\\` as a URI and refuses to open it.
 fn normalize_path_display(path: &std::path::Path) -> String {
     let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-    let s = resolved.to_string_lossy();
-    s.strip_prefix(r"\\?\")
-        .or_else(|| s.strip_prefix("//?/"))
-        .unwrap_or(&s)
-        .replace('/', "\\")
+    strip_extended_prefix(&resolved.to_string_lossy()).replace('/', "\\")
+}
+
+fn strip_extended_prefix(s: &str) -> String {
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{rest}");
+    }
+    if let Some(rest) = s.strip_prefix("//?/UNC/") {
+        return format!(r"\\{}", rest.replace('/', "\\"));
+    }
+    if let Some(rest) = s.strip_prefix(r"\\?\") {
+        return rest.to_string();
+    }
+    if let Some(rest) = s.strip_prefix("//?/") {
+        return rest.to_string();
+    }
+    s.to_string()
 }
 
 #[derive(Serialize)]
@@ -420,12 +433,7 @@ pub fn run() {
                     if !path.is_file() {
                         return None;
                     }
-                    Some(
-                        std::fs::canonicalize(&path)
-                            .unwrap_or(path)
-                            .to_string_lossy()
-                            .into_owned(),
-                    )
+                    Some(normalize_path_display(&path))
                 })
                 .collect();
             let _ = app.emit("second-instance", paths);

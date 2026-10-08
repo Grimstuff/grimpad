@@ -187,13 +187,54 @@ function maybeAutoDetectLanguage(get: () => TabsState, tabId: TabId, text: strin
   );
 }
 
+/**
+ * Drop the Win32 `\\?\` prefix `canonicalize` adds.
+ * `\\?\C:\foo` → `C:\foo`. `\\?\UNC\server\share` → `\\server\share`.
+ */
+export function normalizeWindowsPath(path: string): string {
+  let p = path.trim();
+  if (/^\\\\\?\\unc\\/i.test(p)) {
+    p = "\\\\" + p.slice(8);
+  } else if (/^\/\/\?\/unc\//i.test(p)) {
+    p = "\\\\" + p.slice(8);
+  } else if (p.startsWith("\\\\?\\")) {
+    p = p.slice(4);
+  } else if (p.startsWith("//?/")) {
+    p = p.slice(4);
+  }
+  if (p.startsWith("//")) {
+    p = "\\\\" + p.slice(2);
+  }
+  return p.replace(/\//g, "\\");
+}
+
 /** Unique URI per tab so models never share identity across tabs. */
 function tabModelUri(monaco: typeof MonacoNS, tabId: string, path: string | null) {
   if (path) {
-    const normalized = path.replace(/\\/g, "/");
-    const encoded = encodeURI(normalized.startsWith("/") ? normalized : `/${normalized}`);
-    // Query keeps each tab's model distinct even for the same path.
-    return monaco.Uri.parse(`file://${encoded}?tab=${tabId}`);
+    // Build components directly. `Uri.parse("file://" + path)` throws when the
+    // path still has a `\\?\` prefix, because that becomes a path starting with `//`.
+    const display = normalizeWindowsPath(path).replace(/\\/g, "/");
+    let authority = "";
+    let uriPath = display;
+    if (display.startsWith("//")) {
+      const rest = display.slice(2);
+      const slash = rest.indexOf("/");
+      if (slash === -1) {
+        authority = rest;
+        uriPath = "/";
+      } else {
+        authority = rest.slice(0, slash);
+        uriPath = rest.slice(slash) || "/";
+      }
+    } else if (!display.startsWith("/")) {
+      uriPath = `/${display}`;
+    }
+    return monaco.Uri.from({
+      scheme: "file",
+      authority,
+      path: uriPath,
+      query: `tab=${tabId}`,
+    });
   }
   return monaco.Uri.parse(`inmemory://grimpad/${tabId}`);
 }
@@ -485,7 +526,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     let usedUntitled = false;
 
     for (const raw of paths) {
-      const path = raw.trim();
+      const path = normalizeWindowsPath(raw);
       if (!path) continue;
 
       const existing = get().tabs.find(
