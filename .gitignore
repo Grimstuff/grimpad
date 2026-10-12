@@ -54,8 +54,8 @@ ehthumbs.db
 *.sw?
 *~
 
-# Local idea scratchpad (not shipped)
-.grok/
+# Local agent guide (kept off GitHub; cloud sessions read it from the project folder)
+AGENTS.md
 
 # Misc tooling / caches
 *.tsbuildinfo

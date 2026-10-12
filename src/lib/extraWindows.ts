@@ -6,7 +6,7 @@ import { applySessionSnapshot } from "./session";
 import { isMarkdownLike, languageFromPath, titleFromPath } from "./languages";
 import { readFile } from "./fileService";
 import { useSettingsStore } from "../store/settingsStore";
-import { useTabsStore } from "../store/tabsStore";
+import { normalizeWindowsPath, useTabsStore } from "../store/tabsStore";
 
 export function isMainWindow(): boolean {
   try {
@@ -78,7 +78,9 @@ export async function detachTabToNewWindow(tabId: string): Promise<void> {
 
 async function snapshotFromPaths(paths: string[]): Promise<SessionSnapshot> {
   const tabs: SessionTab[] = [];
-  for (const path of paths) {
+  for (const raw of paths) {
+    const path = normalizeWindowsPath(raw);
+    if (!path) continue;
     try {
       const content = await readFile(path);
       tabs.push({
