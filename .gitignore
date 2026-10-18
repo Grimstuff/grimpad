@@ -66,3 +66,11 @@ coverage
 .eslintcache
 *.orig
 *.bak
+
+# Source art and unused icon sizes (kept locally, not shipped)
+src-tauri/icons/app-icon-source.png
+src-tauri/icons/Square*Logo.png
+src-tauri/icons/StoreLogo.png
+src-tauri/icons/64x64.png
+src/assets/app-icon.png
+public/branding/grimsoft-icon.jpg
