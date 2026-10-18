@@ -4,6 +4,7 @@
 
 - Grimpad no longer checks for updates on its own at startup. Use Check for updates in the hamburger menu.
 - Check for updates says Grimpad is up to date when the latest release has no update info, instead of reporting a failure.
+- Fixed .bat, .cmd, .vbs and .reg files opening in Grimpad on double-click instead of running. The installer no longer claims them and hands them back to Windows when updating from 0.6.1 or earlier.
 
 ## 0.6.1
 

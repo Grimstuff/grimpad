@@ -58,6 +58,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -78,12 +83,12 @@
           "py", "pyw", "pyi", "rs", "go", "java", "kt", "kts", "cs", "fs", "fsx",
           "cpp", "cxx", "cc", "c", "h", "hpp", "hxx", "m", "mm",
           "rb", "php", "phtml", "pl", "pm",
-          "sh", "bash", "zsh", "ps1", "psm1", "psd1", "bat", "cmd", "vbs",
+          "sh", "bash", "zsh", "ps1", "psm1", "psd1",
           "sql", "r", "lua", "swift", "dart", "vue", "svelte",
           "graphql", "gql", "proto", "csv", "tsv",
           "diff", "patch", "cmake", "mk", "asm",
           "env", "gitignore", "gitattributes", "editorconfig", "htaccess", "npmrc",
-          "srt", "vtt", "reg"
+          "srt", "vtt"
         ],
         "name": "Grimpad Document",
         "description": "Open with Grimpad",
