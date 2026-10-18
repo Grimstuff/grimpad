@@ -5,6 +5,7 @@ import { useTabsStore } from "../store/tabsStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { detachTabToNewWindow } from "../lib/extraWindows";
 import { AboutDialog } from "./AboutDialog";
+import { checkForUpdates } from "../lib/updates";
 import {
   MONACO_FIND,
   MONACO_GOTO_LINE,
@@ -333,6 +334,13 @@ export function AppChrome() {
             {singleSession ? "✓ Single session" : "Single session"}
           </button>
           <div className="menu-sep" />
+          <button
+            type="button"
+            className="menu-option"
+            onClick={() => run(() => void checkForUpdates(true))}
+          >
+            Check for updates
+          </button>
           <button
             type="button"
             className="menu-option"

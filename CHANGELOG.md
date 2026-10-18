@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Installed copies check GitHub for a new version shortly after launch and offer to install it. Grimpad closes, updates and reopens, keeping unsaved tabs from the main window. The portable exe offers a download link instead. Hamburger menu has Check for updates.
 - Opening a file replaces a lone blank Untitled tab instead of adding a second tab. Works for the Open dialog, drag and drop, and Open with.
 - Find, Replace and Go to line work from Formatted markdown. They switch to Raw and run once.
 - Clicking Ln/Col in the status bar opens Go to line. Line numbers stay visible while it is open.

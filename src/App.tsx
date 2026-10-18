@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AppChrome } from "./components/AppChrome";
 import { EditorPane } from "./components/EditorPane";
 import { StatusBar } from "./components/StatusBar";
+import { UpdateDialog } from "./components/UpdateDialog";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { initThemeListener, useSettingsStore } from "./store/settingsStore";
@@ -11,6 +12,7 @@ import { revealMainWindow } from "./lib/revealWindow";
 import { initSessionPersistence } from "./lib/session";
 import { initFileWatch } from "./lib/fileWatch";
 import { initSecondInstanceListener } from "./lib/extraWindows";
+import { initUpdateCheck } from "./lib/updates";
 import "./styles/tokens.css";
 import "./styles/app.css";
 
@@ -27,6 +29,7 @@ function App() {
     const unsession = initSessionPersistence();
     const unwatch = initFileWatch();
     const unsecond = initSecondInstanceListener();
+    const unupdate = initUpdateCheck();
     void revealMainWindow();
     return () => {
       untheme();
@@ -35,6 +38,7 @@ function App() {
       unsession();
       unwatch();
       unsecond();
+      unupdate();
     };
   }, []);
 
@@ -43,6 +47,7 @@ function App() {
       <AppChrome />
       <EditorPane />
       <StatusBar />
+      <UpdateDialog />
     </div>
   );
 }
