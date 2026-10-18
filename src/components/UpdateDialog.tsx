@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   closeUpdateDialog,
-  dismissUpdate,
   installUpdate,
   openDownloadPage,
   useUpdateStore,
@@ -20,7 +19,7 @@ export function UpdateDialog() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismissUpdate();
+      if (e.key === "Escape") closeUpdateDialog();
     };
     document.addEventListener("keydown", onKey);
     requestAnimationFrame(() => primaryRef.current?.focus());
@@ -77,7 +76,7 @@ export function UpdateDialog() {
     );
     actions = (
       <div className="update-actions">
-        <button type="button" className="update-later" onClick={dismissUpdate}>
+        <button type="button" className="update-later" onClick={closeUpdateDialog}>
           Later
         </button>
         {installed ? (
@@ -94,7 +93,7 @@ export function UpdateDialog() {
   }
 
   return createPortal(
-    <div className="about-overlay" role="presentation" onMouseDown={dismissUpdate}>
+    <div className="about-overlay" role="presentation" onMouseDown={closeUpdateDialog}>
       <div
         className="about-dialog update-dialog"
         role="dialog"

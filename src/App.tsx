@@ -12,7 +12,6 @@ import { revealMainWindow } from "./lib/revealWindow";
 import { initSessionPersistence } from "./lib/session";
 import { initFileWatch } from "./lib/fileWatch";
 import { initSecondInstanceListener } from "./lib/extraWindows";
-import { initUpdateCheck } from "./lib/updates";
 import "./styles/tokens.css";
 import "./styles/app.css";
 
@@ -29,7 +28,6 @@ function App() {
     const unsession = initSessionPersistence();
     const unwatch = initFileWatch();
     const unsecond = initSecondInstanceListener();
-    const unupdate = initUpdateCheck();
     void revealMainWindow();
     return () => {
       untheme();
@@ -38,7 +36,6 @@ function App() {
       unsession();
       unwatch();
       unsecond();
-      unupdate();
     };
   }, []);
 

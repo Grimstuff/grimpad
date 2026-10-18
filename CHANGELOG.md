@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Grimpad no longer checks for updates on its own at startup. Use Check for updates in the hamburger menu.
+- Check for updates says Grimpad is up to date when the latest release has no update info, instead of reporting a failure.
+
 ## 0.6.1
 
 - Installed copies check GitHub for a new version shortly after launch and offer to install it. Grimpad closes, updates and reopens, keeping unsaved tabs from the main window. The portable exe offers a download link instead. Hamburger menu has Check for updates.

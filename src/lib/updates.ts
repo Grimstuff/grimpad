@@ -1,12 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
-import { isMainWindow } from "./extraWindows";
 import { saveSessionToDisk } from "./session";
-
-/** Version the user closed with Later; startup checks stay quiet for it. */
-const DISMISSED_KEY = "grimpad.update.dismissed";
-const STARTUP_DELAY_MS = 4000;
 
 export type UpdatePhase = "checking" | "available" | "none" | "downloading" | "error";
 
@@ -39,26 +34,22 @@ function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-function readDismissed(): string | null {
-  try {
-    return localStorage.getItem(DISMISSED_KEY);
-  } catch {
-    return null;
-  }
+/** The latest release has no latest.json (one published before the updater existed). */
+function isMissingManifest(e: unknown): boolean {
+  return /valid release JSON/i.test(errorText(e));
 }
 
-/** Ask GitHub for a newer release. Manual checks always report back; the startup check only speaks up for a new version. */
-export async function checkForUpdates(manual: boolean): Promise<void> {
+/** Ask GitHub for a newer release. Only runs from the menu: Grimpad never checks on its own. */
+export async function checkForUpdates(): Promise<void> {
   if (busy) return;
   busy = true;
-  if (manual) useUpdateStore.setState({ open: true, phase: "checking", error: "" });
+  useUpdateStore.setState({ open: true, phase: "checking", error: "" });
   try {
     const update = await check();
     if (!update) {
-      if (manual) useUpdateStore.setState({ phase: "none" });
+      useUpdateStore.setState({ phase: "none" });
       return;
     }
-    if (!manual && readDismissed() === update.version) return;
     pending = update;
     const installed = await invoke<boolean>("is_installed_copy").catch(() => false);
     useUpdateStore.setState({
@@ -72,7 +63,9 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
     });
   } catch (e) {
     console.warn("update check failed", e);
-    if (manual) useUpdateStore.setState({ phase: "error", error: errorText(e) });
+    useUpdateStore.setState(
+      isMissingManifest(e) ? { phase: "none" } : { phase: "error", error: errorText(e) },
+    );
   } finally {
     busy = false;
   }
@@ -110,26 +103,7 @@ export function openDownloadPage(): void {
   closeUpdateDialog();
 }
 
-export function dismissUpdate(): void {
-  const { phase, version } = useUpdateStore.getState();
-  if (phase === "available" && version) {
-    try {
-      localStorage.setItem(DISMISSED_KEY, version);
-    } catch {
-      /* ignore */
-    }
-  }
-  closeUpdateDialog();
-}
-
 export function closeUpdateDialog(): void {
   if (useUpdateStore.getState().phase === "downloading") return;
   useUpdateStore.setState({ open: false });
-}
-
-/** Quiet check shortly after launch, from the main window only. */
-export function initUpdateCheck(): () => void {
-  if (!isMainWindow() || import.meta.env.DEV) return () => {};
-  const timer = window.setTimeout(() => void checkForUpdates(false), STARTUP_DELAY_MS);
-  return () => window.clearTimeout(timer);
 }

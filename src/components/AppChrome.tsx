@@ -337,7 +337,7 @@ export function AppChrome() {
           <button
             type="button"
             className="menu-option"
-            onClick={() => run(() => void checkForUpdates(true))}
+            onClick={() => run(() => void checkForUpdates())}
           >
             Check for updates
           </button>
