@@ -22,6 +22,7 @@
     "core:window:allow-destroy",
     "core:window:allow-set-background-color",
     "core:webview:allow-set-webview-background-color",
-    "window-state:default"
+    "window-state:default",
+    "updater:default"
   ]
 }

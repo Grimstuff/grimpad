@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Grimpad no longer checks for updates on its own at startup. Use Check for updates in the hamburger menu.
+- Check for updates says Grimpad is up to date when the latest release has no update info, instead of reporting a failure.
+- Fixed .bat, .cmd, .vbs and .reg files opening in Grimpad on double-click instead of running. The installer no longer claims them and hands them back to Windows when updating from 0.6.1 or earlier.
+
+## 0.6.1
+
+- Installed copies check GitHub for a new version shortly after launch and offer to install it. Grimpad closes, updates and reopens, keeping unsaved tabs from the main window. The portable exe offers a download link instead. Hamburger menu has Check for updates.
 - Opening a file replaces a lone blank Untitled tab instead of adding a second tab. Works for the Open dialog, drag and drop, and Open with.
 - Find, Replace and Go to line work from Formatted markdown. They switch to Raw and run once.
 - Clicking Ln/Col in the status bar opens Go to line. Line numbers stay visible while it is open.

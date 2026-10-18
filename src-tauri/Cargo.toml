@@ -1,6 +1,6 @@
 [package]
 name = "grimpad"
-version = "0.6.0"
+version = "0.6.1"
 description = "A lightweight Fluent-style notepad with VS Code syntax highlighting"
 authors = ["Grimmers"]
 edition = "2021"
@@ -28,3 +28,4 @@ windows = { version = "0.61", features = [
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-window-state = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
