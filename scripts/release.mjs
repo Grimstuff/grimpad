@@ -37,6 +37,14 @@ if (!env.TAURI_SIGNING_PRIVATE_KEY) {
 }
 env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD ??= "";
 
+// The tag must point at the commit that was built, so publish only clean, pushed work.
+let commit = "";
+if (publish) {
+  if (git("status --porcelain --untracked-files=no")) fail("Commit your changes before --publish.");
+  commit = git("rev-parse HEAD");
+  if (!git(`branch -r --contains ${commit}`)) fail("Push this commit before --publish.");
+}
+
 console.log(`Building ${product} ${version} with updater artifacts…`);
 // Updater artifacts only for releases, so a plain `npm run tauri build` never needs the key.
 // Passed as a file because quoting inline JSON through cmd.exe is fragile.
@@ -81,10 +89,14 @@ if (!publish) {
 
 const files = [setupName, portableName, "latest.json"].map((f) => JSON.stringify(join(out, f))).join(" ");
 execSync(
-  `gh release create ${tag} ${files} --repo ${REPO} --target main --title "${product} ${displayVersion(version)}" --notes-file ${JSON.stringify(join(out, "notes.md"))}`,
+  `gh release create ${tag} ${files} --repo ${REPO} --target ${commit} --title "${product} ${displayVersion(version)}" --notes-file ${JSON.stringify(join(out, "notes.md"))}`,
   { cwd: root, stdio: "inherit" },
 );
 console.log(`\nPublished ${tag}. Installed copies pick it up on their next launch.`);
+
+function git(args) {
+  return execSync(`git ${args}`, { cwd: root, encoding: "utf8" }).trim();
+}
 
 function displayVersion(v) {
   return v.replace(/\.0$/, "");
