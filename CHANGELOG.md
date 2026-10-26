@@ -1,7 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.6.2
 
+- Grimpad no longer checks for updates on its own at startup. Use Check for updates in the hamburger menu.
+- Check for updates says Grimpad is up to date when the latest release has no update info, instead of reporting a failure.
+- Fixed .bat, .cmd, .ps1, .py, .reg, .html and other files opening in Grimpad on double-click instead of running. The installer only adds Grimpad to Open with and no longer makes it the default app for any file type. Installing 0.6.2 undoes the defaults earlier versions set, and uninstalling no longer leaves file types pointing at a missing app.
+
+## 0.6.1
+
+- Installed copies check GitHub for a new version shortly after launch and offer to install it. Grimpad closes, updates and reopens, keeping unsaved tabs from the main window. The portable exe offers a download link instead. Hamburger menu has Check for updates.
 - Opening a file replaces a lone blank Untitled tab instead of adding a second tab. Works for the Open dialog, drag and drop, and Open with.
 - Find, Replace and Go to line work from Formatted markdown. They switch to Raw and run once.
 - Clicking Ln/Col in the status bar opens Go to line. Line numbers stay visible while it is open.
@@ -10,7 +17,6 @@
 - Theme follows Windows light/dark. The theme menu is gone.
 - Saving to a protected location asks for administrator permission through Windows instead of failing.
 - The installer registers Grimpad on Open with for more text and code file types.
-- The installer only adds Grimpad to Open with. It no longer makes itself the default app, so .bat, .cmd, .ps1, .py, .reg, .html and other files open or run as before. Installing this version also undoes the defaults earlier installers set, and uninstalling no longer leaves file types pointing at a missing app.
 - Code blocks in Formatted markdown have no language dropdown and use the app's background instead of a white panel.
 - Fixed files opened through Explorer or a second launch failing to load when Windows handed over a `\\?\` path, including network (UNC) paths.
 

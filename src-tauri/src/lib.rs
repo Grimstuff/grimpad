@@ -416,6 +416,29 @@ fn relative_luminance(r: u8, g: u8, b: u8) -> f64 {
     0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 }
 
+const RELEASES_URL: &str = "https://github.com/Grimstuff/grimpad/releases/latest";
+
+/// True when this exe was put in place by the NSIS installer, which leaves
+/// `uninstall.exe` beside it. The portable exe can't self-update: the updater
+/// runs the installer, which would install a second copy elsewhere.
+#[tauri::command]
+fn is_installed_copy() -> bool {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|dir| dir.join("uninstall.exe").is_file()))
+        .unwrap_or(false)
+}
+
+/// Portable copies get a link to the download page instead of an install.
+#[tauri::command]
+fn open_releases_page() -> Result<(), String> {
+    std::process::Command::new("explorer")
+        .arg(RELEASES_URL)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -460,6 +483,7 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 use tauri::Manager;
+                app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
                 use tauri::window::Color;
                 if let Some(win) = app.get_webview_window("main") {
                     let _ = win.set_background_color(Some(Color(0x1e, 0x1e, 0x1e, 0xff)));
@@ -475,7 +499,9 @@ pub fn run() {
             get_system_accent,
             get_wheel_scroll,
             save_session,
-            load_session
+            load_session,
+            is_installed_copy,
+            open_releases_page
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
