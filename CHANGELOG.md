@@ -10,6 +10,7 @@
 - Theme follows Windows light/dark. The theme menu is gone.
 - Saving to a protected location asks for administrator permission through Windows instead of failing.
 - The installer registers Grimpad on Open with for more text and code file types.
+- The installer only adds Grimpad to Open with. It no longer makes itself the default app, so .bat, .cmd, .ps1, .py, .reg, .html and other files open or run as before. Installing this version also undoes the defaults earlier installers set, and uninstalling no longer leaves file types pointing at a missing app.
 - Code blocks in Formatted markdown have no language dropdown and use the app's background instead of a white panel.
 - Fixed files opened through Explorer or a second launch failing to load when Windows handed over a `\\?\` path, including network (UNC) paths.
 
